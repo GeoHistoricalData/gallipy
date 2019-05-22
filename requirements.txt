@@ -1,0 +1,5 @@
+xmltodict
+beautifulsoup4
+rfc3987
+lark-parser
+lxml
