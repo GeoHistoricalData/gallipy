@@ -12,7 +12,7 @@ Also I wanted to play with pythonic monades from [this **awesome** article](http
 **Example**
 Retrieve the first issue of the periodical journal *Le Journal de Toto* for the year 1937, then save this document as a PDF file.
 ```python
-# my_ressource links to the periodical journal
+# my_ressource links to the periodical journal 'Le Journal de Toto'
 my_resource = Resource('https://gallica.bnf.fr/ark:/12148/cb32798952c/date')
 
 # Fetch the resource metadata with the service Issues and get the ARK id of the first issue in 1937
