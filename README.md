@@ -161,7 +161,7 @@ r.fulltextsearch('hugo') # Search for 'hugo' in the whole document
 r.fulltextsearch_sync(query='hugo',page=10, startResult=1)  # Search for 'hugo' at page 10 and return all results in one 'page'.<
 ```
 
-#### Content retrieve
+#### Content retrieval
 Retrieve the content of a document. This is how you get the full PDFs.
 
 Optional parameter `mode` can be 'pdf' or 'texteBrut' ('texteImage' is not supported). Default is 'pdf.'
@@ -176,7 +176,7 @@ e.map(lambda x : open('myresource.html','wb').write(x))
 ```
 The parameters `startPage` and `nPages` have precedence over the resource's ARK qualifier. Wich means that `Resource('ark:/12148/btv1b693073/f1n10.textBrut').content(startPage=10, nPages=10, mode=pdf)` will return pages 10 to 20 of resource `ark:/12148/btv1b693073` in PDF. `mode` will always be appended to the end of the qualifier.
 
-### IIIF API
+## IIIF API
 
 #### Document and image metadata
 Retrieve metadata from an image or a whole document in JSON. 
