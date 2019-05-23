@@ -110,7 +110,7 @@ def callback(either):
 r.pagination().map(callback)
 ```
 
-### Document API
+## Document API
 See the [official documentation](http://api.bnf.fr/api-document-de-gallica) for more details.
 #### Issues
 Retrieve metadata about a periodical journal. The optional parameter `date` will return metadata about all the issues that are available for a specific year.
@@ -217,7 +217,7 @@ with open(ark.name+'_f1.png','bw') as o:
   o.write(r.iiif_data_sync(image='f1',fileformat='png', region=(0,0,width, height)).value)
 ```
 
-## Parsing ARKs
+# Parsing ARKs
 
 Gallipy provides a parser for ARK urls and ARK ids.
 The parser uses `rfc` for the optional non-id part of an ARK and Lark for the actual ARK id.

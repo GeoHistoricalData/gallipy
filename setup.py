@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='gallipy',
-    version='0.1b',
+    version='0.1b1post',
     author="Bertrand Dumenieu",
     author_email="bertranddumenieu@gmail.com",
     description="A python tool to query the French National Library portal gallica.bnf.fr",
