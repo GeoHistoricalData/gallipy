@@ -23,6 +23,7 @@ import xmltodict as xmltoordereddict
 from bs4 import BeautifulSoup
 from .monadic import Left, Either
 
+
 _BASE_PARTS = {"scheme":"https", "netloc":"gallica.bnf.fr"}
 
 def fetch(url):
@@ -104,7 +105,9 @@ def build_service_url(parts=None, service_name=''):
       A string representation of the URL built.
     """
     this_parts = {"path": "services/"+service_name}
-    all_parts = {**_BASE_PARTS, **this_parts, **parts}
+    all_parts = _BASE_PARTS.copy()
+    all_parts.update(this_parts)
+    all_parts.update(parts)
     return build_url(all_parts)
 
 def build_base_url(parts=None, ark=None):
@@ -122,7 +125,9 @@ def build_base_url(parts=None, ark=None):
       The URL to reach the document identified by ark, as a string.
     """
     this_parts = {"path": str(ark)}
-    all_parts = {**_BASE_PARTS, **this_parts, **parts}
+    all_parts = _BASE_PARTS.copy()
+    all_parts.update(this_parts)
+    all_parts.update(parts)
     return build_url(all_parts)
 
 def build_url(parts):
