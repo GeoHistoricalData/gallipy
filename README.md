@@ -6,10 +6,12 @@ The three APIs are wrapped in a single class `Resource`, which is basically the 
 This tool is an ongoing work and some API services are yet to implement. See section TODO!
 
 *Why a new package instead of forking Pyllica or PyGallica?*
+
 I know, "thou should not reinvent the wheel"...but [you can't tell me what to do](https://www.youtube.com/watch?v=RYDy_nlgi5Q)!
 Also I wanted to play with pythonic monades from [this **awesome** article](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) by Alexey Karasev!
 
 **Example**
+
 Retrieve the first issue of the periodical journal *Le Journal de Toto* for the year 1937, then save this document as a PDF file.
 ```python
 # my_ressource links to the periodical journal 'Le Journal de Toto'
@@ -72,12 +74,14 @@ my_resource.issues_sync(date=1937)
 **Monadic objects**
 All methods available from `Resource` return `Either` monadic objects for synchronous methods and `Future` objects for asynchronous ones.
 I won't go into details about monades here because, honestly, I don't know much. Again, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) if you want to go further.
+
 There's really ong things to know : any monade M[a] defines three functions
 - `map: (a -> b) -> (M[a] -> M[b])` which takes a function that transform a to b promote it to a new function that apply to M[a] and returns M[b]
 - `pure: a -> M[a]` which takes some a and wraps it
 - `flat_map: (a -> M[b]) -> (M[a] -> M[b])` wich takes some function that takes an a and return a M[b] and makes it also work on M[a].
 
 **Either monade**
+
 The Either monade is a very elegant way to deal with Exceptions. Either objects can be of two types: `Right[x]` if x is 'valid'(whatever it means)  and `Left[x]` otherwise. In Gallipy `Left` is only used to handle exceptions.
 
 Here is an example with the Gallica service Pagination:
@@ -94,6 +98,7 @@ if either.map(print).is_left:
 Notice how this allows to deal with exceptions where you want, when you want : your program is safe as long as you don't unwrap the Either object.
 
 **Future**
+
 Futures are kinda similar to Javascript Promises. They let you execute a function asynchronously in a light, elegant way.
 In Gallipy, all synchronous functions return some `x: Future[Either[...]]`:
 ```python
@@ -163,6 +168,7 @@ r.fulltextsearch_sync(query='hugo',page=10, startResult=1)  # Search for 'hugo' 
 
 #### Content retrieve
 Retrieve the content of a document. This is how you get the full PDFs.
+
 Optional parameter `mode` can be 'pdf' or 'texteBrut' ('texteImage' is not supported). Default is 'pdf.'
 ```python
 r = Resource('ark:/12148/btv1b693073')
@@ -188,8 +194,10 @@ r.iiif_info_sync()  # Get metadata of the document  'ark:/12148/btv1b90017179'
 
 #### Image retrieval
 Retrieve an image using the IIIF API.
+
 Parameters are detailed in http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica.
 `region` is a 4-elements object of any iterable type.
+
 The ARK qualifier has precedence over the parameter `image`, which means that `image` will be ignored if the resource's ARK is qualified.
 
 ```python
