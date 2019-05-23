@@ -1,6 +1,6 @@
 # Gallipy: yet another python wrapper for the Gallica APIs
 
-Gallipy provide a simple access to gallica.bnf.fr [Document](http://api.bnf.fr/api-document-de-gallica), [IIF](http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica) and [Search](http://api.bnf.fr/api-gallica-de-recherche) APIs.
+Gallipy provides a simple access to gallica.bnf.fr [Document](http://api.bnf.fr/api-document-de-gallica), [IIF](http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica) and [Search](http://api.bnf.fr/api-gallica-de-recherche) APIs.
 The three APIs are wrapped in a single class `Resource`, which is basically the 'R' in 'ARK'.
 
 This tool is an ongoing work and some API services are yet to implement. See section TODO!
