@@ -1,12 +1,8 @@
 # Gallipy: yet another python wrapper for the Gallica APIs
 
-Gallipy provides a simple access to gallica.bnf.fr [Document](http://api.bnf.fr/api-document-de-gallica), [IIF](http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica) and [Search](http://api.bnf.fr/api-gallica-de-recherche) APIs.
-The three APIs are wrapped in a single class `Resource`, which is basically the 'R' in 'ARK'.
-
-This tool is an ongoing work and some API services are yet to implement. See section TODO!
+Gallipy provides a simple access to gallica.bnf.fr [Document](http://api.bnf.fr/api-document-de-gallica) and [IIIF](http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica). The [Search API](http://api.bnf.fr/api-gallica-de-recherche) is not yet implemented. APIs are wrapped in a single class `Resource`, which is basically the 'R' in 'Archival Resouce Key'.
 
 *Why a new package instead of forking Pyllica or PyGallica?*
-
 I know, "thou should not reinvent the wheel"...but [you can't tell me what to do](https://www.youtube.com/watch?v=RYDy_nlgi5Q)!
 Also I wanted to play with pythonic monades from [this **awesome** article](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) by Alexey Karasev!
 
@@ -14,17 +10,19 @@ Also I wanted to play with pythonic monades from [this **awesome** article](http
 
 Retrieve the first issue of the periodical journal *Le Journal de Toto* for the year 1937, then save this document as a PDF file.
 ```python
-# my_ressource links to the periodical journal 'Le Journal de Toto'
-my_resource = Resource('https://gallica.bnf.fr/ark:/12148/cb32798952c/date')
+def retrieve_first_issue(issues):
+  arkname = issues['issues']['issue'][0]['@ark']
+  issue = Resource('ark:/12148/{}'.format(arkname))
+
+  f = issue.content(mode='pdf') # Fetch the content of issue. f : Future[Either[Exception Binary]] 
+  # If fetch wa successful, write the binary content to a file.
+  bs_to_file = lambda bs : open('lejournaldetoto.pdf','wb').write(bs)
+  f.map(lambda x : x.map(bs_to_file))
 
 # Fetch the resource metadata with the service Issues and get the ARK id of the first issue in 1937
+my_resource = Resource('https://gallica.bnf.fr/ark:/12148/cb32798952c/date')
 issues = my_resource.issues(date=1937)  # issues: Future[Resource]
-first_issue = issues.map(lambda x: x['issues']['issue'][0]['@ark'])
-resource = first_issue.map(lambda name : Resource('ark:/12148/'+str(name)))
-
-# Retrive the document using the service texteImage and save the pdf of this issue on the disk.
-bstream_to_file = lambda bs : open('lejournaldetoto.pdf','wb').write(bs)
-resource.content(mode='pdf').map(bstream_to_file)
+issues.map(retrieve_first_issue)  # retrieve_first_issue is the callback function
 ```
 
 # Getting started
@@ -58,9 +56,6 @@ else:
   # Ready to query gallica.bnf.fr!
 ```
 
-The `Search`  API is accessible through class methods, e.g: 
-**[NOT YET IMPLEMENTED]**
-
 ### Synchronous, asynchronous calls and monades
 **Sync/async calls**
 
@@ -75,7 +70,7 @@ my_resource.issues_sync(date=1937)
 **Monadic objects**
 
 All methods available from `Resource` return `Either` monadic objects for synchronous methods and `Future` objects for asynchronous ones.
-I won't go into details about monades here because, honestly, I don't know much. Again, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) if you want to go further.
+I won't go into details about monades here because, honestly, I don't know much. Again, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) for more details & explanations.
 
 There's really ong things to know : any monade M[a] defines three functions
 - `map: (a -> b) -> (M[a] -> M[b])` which takes a function that transform a to b promote it to a new function that apply to M[a] and returns M[b]

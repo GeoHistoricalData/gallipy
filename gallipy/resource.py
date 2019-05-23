@@ -71,32 +71,32 @@ class Resource():
   def image_preview(self, resolution='thumbnail'):
     """
     """
-    return Future.asyn(lambda: imagereview_sync())
+    return Future.asyn(lambda: self.imagereview_sync())
 
   def fulltextsearch(self, query='', page='', startResult=''):
     """
     """
-    return Future.asyn(lambda: contentsearch_sync(query, page, startResult))
+    return Future.asyn(lambda: self.contentsearch_sync(query, page, startResult))
 
   def toc(self):
     """
     """
-    return Future.asyn(lambda: toc_sync())
+    return Future.asyn(lambda: self.toc_sync())
 
   def content(self, startPage=None, nPages=None, mode='pdf'):
     """
     """
-    return Future.asyn(lambda: contentsearch_sync(startPage, nPages, mode))
+    return Future.asyn(lambda: self.content_sync(startPage, nPages, mode))
 
   def iiif_info(self, image=''):
     """
     """
-    return Future.asyn(lambda: contentsearch_sync(image))
+    return Future.asyn(lambda: self.iiif_info_sync(image))
 
   def iiif_data(self, image='', region=(0,0,1,1), size='full', rotation=0, quality='native', imgtype='png'):
     """
     """
-    return Future.asyn(lambda: contentsearch_sync(image, region, size, rotation, quality, imgtype))
+    return Future.asyn(lambda: self.iiif_data_sync(image, region, size, rotation, quality, imgtype))
 
   @staticmethod
   def search():
@@ -144,7 +144,6 @@ class Resource():
     # startPage and nPages have precedence over self._ark.qualifier
     qualifier = 'f{}'.format(startPage) if startPage else None
     qualifier = '{}n{}'.format(qualifier, nPages) if nPages else None
-    
     if qualifier:
       arkstr = 'ark:/{}/{}/{}'.format(self._ark.naan, self._ark.name,qualifier)
     else:
@@ -152,7 +151,6 @@ class Resource():
     arkstr = '{}.{}'.format(arkstr, mode)
     urlparts = {"path": arkstr}
     url = h.build_base_url(urlparts)
-    print(url)
     return h.fetch(url)
 
   def iiif_info_sync(self, image=''):
@@ -175,9 +173,7 @@ class Resource():
       path = '/'.join(map(str,[path, image, region_str, size, rotation, quality]))
     path += '.'+imgtype
     urlparts = {"path": path}  
-    print(path)
     url = h.build_base_url(urlparts)
-    print(url)
     return h.fetch(url)
 
     @staticmethod

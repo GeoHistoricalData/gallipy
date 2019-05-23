@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='gallipy',
-    version='0.1',
+    version='0.1b',
     author="Bertrand Dumenieu",
     author_email="bertranddumenieu@gmail.com",
     description="A python tool to query the French National Library portal gallica.bnf.fr",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
+    url="https://github.com/GeoHistoricalData/gallipy",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3.5",
