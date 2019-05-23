@@ -15,7 +15,7 @@ def retrieve_first_issue(issues):
   issue = Resource('ark:/12148/{}'.format(arkname))
 
   f = issue.content(mode='pdf') # Fetch the content of issue. f : Future[Either[Exception Binary]] 
-  # If fetch wa successful, write the binary content to a file.
+  # If fetch succeeded, write the binary content to a file.
   bs_to_file = lambda bs : open('lejournaldetoto.pdf','wb').write(bs)
   f.map(lambda x : x.map(bs_to_file))
 
@@ -67,19 +67,21 @@ my_resource.issues(date=1937)  # issues: Resource -> Future[Either[Exception Dic
 # Synchronous call
 my_resource.issues_sync(date=1937) # issues_sync: Resource -> Either[Exception Dict]
 ```
-**Monadic objects**
+**Pythonic monades**
 
-All methods available from `Resource` return `Either` monadic objects for synchronous methods and `Future` objects for asynchronous ones.
-I won't go into details about monades here because, honestly, I don't know much. Again, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) for more details & explanations.
-
-There's really ong things to know : any monade M[a] defines three functions
-- `map: (a -> b) -> (M[a] -> M[b])` which takes a function that transform a to b promote it to a new function that apply to M[a] and returns M[b]
-- `pure: a -> M[a]` which takes some a and wraps it
-- `flat_map: (a -> M[b]) -> (M[a] -> M[b])` wich takes some function that takes an a and return a M[b] and makes it also work on M[a].
+All methods available from `Resource` return `Either` objects for synchronous methods and `Future` objects for asynchronous ones.
+The classes `Either` and `Future` are implementation of the Either and Future *Monades* used in functional programming.
+Here, a `Monade` is just some kind of wrapper that takes some object of type a and put it inside an object of type `M[a]` where M is a subclass of `Monade`. 
+The class `Monade` defines three functions : 
+- `pure : x -> M[y]`: which accepts an object of type *x* and returns an object of monadic type *M[x]*.
+- `map: (x -> y) -> (M[x] -> M[y])`: takes some function f: (x -> y) and 'converts' it to a new function that applies to some M[x] and returns a M[y]. Basically, it applies f to the object wrapped inside a monade object and returns another monade object that wraps the result of f.
+- `flat_map: (x -> M[y]) -> (M[x] -> M[y])`: Let say there is f: (String -> Monade[String]). If you map f on some x: Monade[String] you'll get a y: Monade[Monade[String]]). Not very cool, right? But with flat_map you'll end with a simple y: Monade[String].
+For an in-depth explanation, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) and [this](https://medium.freecodecamp.org/demystifying-the-monad-in-scala-cc716bb6f534)
 
 **Either monade**
 
-The Either monade is a very elegant way to deal with Exceptions. Either objects can be of two types: `Right[x]` if x is 'valid'(whatever it means)  and `Left[x]` otherwise. In Gallipy `Left` is only used to handle exceptions.
+The Either monade is a very elegant way to deal with Exceptions. It allows to wrap them inside a stable object that won't *ever* break your code. Then, you decide where to unwrap and deal with the exception.
+Either objects can be of two types: `Right[x]` if x is 'valid' (whatever it means)  and `Left[x]` otherwise. In Gallipy `Left` is only used to wrap exceptions.
 
 Here is an example with the Gallica service Pagination:
 ```python
@@ -92,9 +94,7 @@ either = r.pagination_sync()
 if either.map(print).is_left:
   raise either.value
 ```
-Notice how this allows to deal with exceptions where you want, when you want : your program is safe as long as you don't unwrap the Either object.
-
-**Future**
+**Future monade**
 
 Futures are kinda similar to Javascript Promises. They let you execute a function asynchronously in a light, elegant way.
 In Gallipy, all synchronous functions return some `x: Future[Either[...]]`:
@@ -109,8 +109,6 @@ def callback(either):
   
 r.pagination().map(callback)
 ```
-
-
 
 ### Document API
 See the [official documentation](http://api.bnf.fr/api-document-de-gallica) for more details.
