@@ -62,10 +62,10 @@ else:
 Gallipy allows for synchronous or asynchronous queries:
 ```python
 # Asynchronous call
-my_resource.issues(date=1937)
+my_resource.issues(date=1937)  # issues: Resource -> Future[Either[Exception Dict]]
 
 # Synchronous call
-my_resource.issues_sync(date=1937)
+my_resource.issues_sync(date=1937) # issues_sync: Resource -> Either[Exception Dict]
 ```
 **Monadic objects**
 
