@@ -53,8 +53,7 @@ TEST_CASES = [
     ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n10.pdf', Right),
     ('12148/bpt6k5619759j', Left),  # Scheme is missing
     ('ark://12148', Left),  # Naan is missing
-    ('ark:/12148/', Left),  # Name is missing
-    ('You can\'t see me', Left),  # JOHN CENA!
+    ('ark:/12148/', Left),  # Name is missing + slash
     ('/ark:/12148/bpt6k5619759j', Left),  # Leading slash
     ('ark:/12148/bpt6k5619759j/', Left),  # Trailing slash
     ('ark:/12148/bpt6k5619759j', Right),  # Valid ARK id
