@@ -27,7 +27,7 @@ TEST_CASES = [
 ]
 
 @pytest.mark.parametrize("test,expected", TEST_CASES)
-def test_constructor_nok(test, expected):
+def test_constructor_fails(test, expected):
     """Test constructor failures."""
     with pytest.raises(expected):
         Ark(**test)
@@ -37,9 +37,9 @@ TEST_CASES = [
     ({"scheme":"s", "authority":"a", "naan":"n", "name":"n", "qualifier":"q"}),
 ]
 @pytest.mark.parametrize("test", TEST_CASES)
-def test_constructor_ok(test):
+def test_constructor_succeeds(test):
     """Test constructor success."""
-    print(Ark(**test))
+    Ark(**test)
 
 
 TEST_CASES = [
@@ -49,35 +49,73 @@ TEST_CASES = [
     ('http:///ark:/12148/bpt6k5619759j', Left),  # NMAH is missing
     ('http://gallica.bnf.fr/', Left),  # ARKId is missing
     ('You can\'t see me', Left),  # JOHN CENA!
-    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j', Right), # Valid ARK
-    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n10.pdf', Right),
     ('12148/bpt6k5619759j', Left),  # Scheme is missing
     ('ark://12148', Left),  # Naan is missing
     ('ark:/12148/', Left),  # Name is missing + slash
     ('/ark:/12148/bpt6k5619759j', Left),  # Leading slash
     ('ark:/12148/bpt6k5619759j/', Left),  # Trailing slash
-    ('ark:/12148/bpt6k5619759j', Right),  # Valid ARK id
     ('ark:/12148/bpt6k?@:5619759j', Left),  # Invalid chars
+    ('ark:/12148/bpt6k5619759j?date=1937', Left),  # Invalid ending
+    ('ark:/12148/bpt6k5619759j#date', Left), # Qualifier must start with /
+    ('ark:/12148/bpt6k5619759j', Right),  # Valid ARK id
     ('ark:/12148/bpt6k5619759j/f1n10.pdf', Right),  # Valid ARK id with qualifier
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j', Right), # Valid ARK
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n10.pdf', Right),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j?date=date', Right), # Ark with additional infos
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j#date', Right), # Ark with additional infos
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n10.pdf?query=test', Right),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n10.pdf#test', Right),
 ]
 
 @pytest.mark.parametrize("test,expected", TEST_CASES)
-def test_ark(test, expected):
+def test_parser_behavior(test, expected):
     """Test ARK parsing."""
     assert isinstance(Ark.parse(test), expected)
 
-def test_ark_extract_arkid():
-    """Test ARK ID extraction from ARK URL."""
-    ark = 'https://gallica.bnf.fr/ark:/12148/bpt6k5619759j'
-    arkid = 'ark:/12148/bpt6k5619759j'
-    parsed = Ark.parse(ark)
-    assert str(parsed.value.arkid) == arkid
+TEST_CASES = [
+    ('ark:/12148/bpt6k5619759j'),  # Valid ARK id
+    ('ark:/12148/bpt6k5619759j/f1n10.pdf'),  # Valid ARK id with qualifier
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j'), # Valid ARK
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n10.pdf'),
+]
+
+@pytest.mark.parametrize("test", TEST_CASES)
+def test_parser_output_equivalent_to_input_if_no_additional_info(test):
+    """Test if result of parsing is equals to the input str"""
+    assert Ark.parse(test).map(str).value == test
 
 TEST_CASES = [
-    ('ark:/12148/bpt6k5619759j/f1n10.pdf'),  # Valid ARK id with qualifier
+    ('ark:/12148/bpt6k5619759j', 'ark:/12148/bpt6k5619759j'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j?date=date', 'https://gallica.bnf.fr/ark:/12148/bpt6k5619759j'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j#date', 'https://gallica.bnf.fr/ark:/12148/bpt6k5619759j'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n1?date=date', 'https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n1'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n1.x_x.pdf#date', 'https://gallica.bnf.fr/ark:/12148/bpt6k5619759j/f1n1.x_x.pdf'),
+]
+
+@pytest.mark.parametrize("test,expected", TEST_CASES)
+def test_additional_infos_ignored(test, expected):
+    """Ensure that additional infos at the end on an ARK URL is ignored."""
+    assert Ark.parse(test).map(str).value == expected
+
+TEST_CASES = [
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j', 'ark:/12148/bpt6k5619759j'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j?date=date', 'ark:/12148/bpt6k5619759j'),
+    ('ark:/12148/bpt6k5619759j', 'ark:/12148/bpt6k5619759j'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j#date', 'ark:/12148/bpt6k5619759j'),
+]
+
+@pytest.mark.parametrize("test,expected", TEST_CASES)
+def test_extract_arkid_from_ark(test, expected):
+    """Test ARK ID extraction from ARK URL."""
+    assert Ark.parse(test).map(lambda x: x.arkid).map(str).value == expected
+
+TEST_CASES = [
+    ('ark:/12148/bpt6k5619759j/f1n10.pdf'),
+    ('https://gallica.bnf.fr/ark:/12148/bpt6k5619759j'),
 ]
 
 @pytest.mark.parametrize("test", TEST_CASES)
 def test_copy(test):
     """Test copy constructor."""
-    assert str(Ark.parse(test).value) == str(Ark.parse(test).value.copy())
+    ark = Ark.parse(test).value
+    assert str(ark.copy()) == str(ark)
