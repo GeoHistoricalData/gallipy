@@ -92,7 +92,7 @@ class Ark:
         Returns:
             Ark: A copy of self
         """
-        return Ark(**self._ark_parts)
+        return Ark(**self.parts)
 
     @property
     def scheme(self):
@@ -152,10 +152,15 @@ class Ark:
         """
         if self.is_arkid():
             return self
-        parts = self._ark_parts.copy()
+        parts = self.parts
         parts['scheme'] = 'ark'
         del parts['authority']
         return Ark(**parts)
+
+    @property
+    def parts(self):
+        """A copy of the parts composing this ARK."""
+        return self._ark_parts.copy()
 
     def is_arkid(self):
         """The ARK ID of this Ark.
@@ -198,7 +203,6 @@ class Ark:
 
     def __str__(self):
         """Simple string representation of this Ark"""
-
         pattern = "{scheme}://{authority}/" if not self.is_arkid() else ""
         pattern += _ARKID_SCHEME+":/{naan}/{name}"
         pattern += "/{qualifier}" if self.qualifier else ""
