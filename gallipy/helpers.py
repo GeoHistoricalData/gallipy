@@ -19,7 +19,6 @@ https://github.com/GeoHistoricalData/gallipy
 """
 import urllib.parse
 import json
-import xmltodict as xmltoordereddict
 from bs4 import BeautifulSoup
 from .monadic import Left, Either
 
@@ -27,24 +26,24 @@ from .monadic import Left, Either
 _BASE_PARTS = {"scheme":"https", "netloc":"gallica.bnf.fr"}
 
 def fetch(url):
-    """Fetches binary data from an URL
+    """Fetches data from an URL
 
-    Retrieves binary data from an URL and wraps it in an Either object.
+    Fetch data from URL and wraps the unicode encoded response in an Either object.
 
     Args:
       url: An URL to fetch.
       timeout: Sets a timeout delay (Optional).
 
     Returns:
-      An Either[Binary] if everything went fine and an Either[Exception]
+      An Either[Unicode] if everything went fine and an Either[Exception]
       otherwise.
     """
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
-            return Either.pure(response.read()) # Maybe returning the stream would be a better idea
+            return Either.pure(response.read())
     except urllib.error.URLError as ex:
-        msgpattern = "Error while fetching URL {}\n{}"
-        err = urllib.error.URLError(msgpattern.format(url, str(ex)))
+        pattern = "Error while fetching URL {}\n{}"
+        err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
 
 def fetch_xml(url):
@@ -62,11 +61,10 @@ def fetch_xml(url):
       otherwise.
     """
     try:
-        eithersoup = fetch(url).map(lambda xml: BeautifulSoup(xml, 'xml'))
-        return eithersoup.map(str)
+        return fetch(url).map(lambda r: str(BeautifulSoup(r, 'xml')))
     except urllib.error.URLError as ex:
-        msgpattern = "Error while fetching XML from URL {}\n{}"
-        err = urllib.error.URLError(msgpattern.format(url, str(ex)))
+        pattern = "Error while fetching XML from URL {}\n{}"
+        err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
 
 def fetch_json(url):
@@ -83,11 +81,10 @@ def fetch_json(url):
       otherwise.
     """
     try:
-        jsonu = fetch(url).map(json.loads)
-        return jsonu
+        return fetch(url).map(json.load)
     except urllib.error.URLError as ex:
-        msgpattern = "Error while fetching JSON from URL {}\n{}"
-        err = urllib.error.URLError(msgpattern.format(url, str(ex)))
+        pattern = "Error while fetching JSON from URL {}\n{}"
+        err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
 
 def build_service_url(parts=None, service_name=''):
@@ -149,25 +146,3 @@ def build_url(parts):
     elements = ["scheme", "netloc", "path", "params", "query", "fragment"]
     sorted_parts = [all_parts.get(key) for key in elements]
     return urllib.parse.urlunparse(sorted_parts)
-
-def jsontodict(json_data):
-    """Transforms a json object into a dict .
-
-    Args:
-      json_data: A JSON object.
-
-    Returns:
-      A dictionary representation of json_data.
-    """
-    return dict(json_data)
-
-def xmltodict(xml):
-    """Transforms a xml document string into a dict.
-
-    Args:
-      xml: A valid XML string.
-
-    Returns:
-      A dictionary representation of the xml document
-    """
-    return dict(xmltoordereddict.parse(xml))
