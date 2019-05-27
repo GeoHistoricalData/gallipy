@@ -31,12 +31,12 @@ def fetch(url):
     Fetch data from URL and wraps the unicode encoded response in an Either object.
 
     Args:
-      url: An URL to fetch.
-      timeout: Sets a timeout delay (Optional).
+        url (str): An URL to fetch.
+        timeout (:obj:int, optional): Sets a timeout delay (Optional).
 
     Returns:
-      An Either[Unicode] if everything went fine and an Either[Exception]
-      otherwise.
+        Either[Exception Unicode]: Unicode if everything went fine
+            and Exception otherwise.
     """
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
@@ -53,12 +53,11 @@ def fetch_xml(url):
     The xml data is a simple string.
 
     Args:
-      url: An URL to fetch.
-      timeout: Sets a timeout delay (Optional).
+      url (str): An URL to fetch.
 
     Returns:
-      An Either[String] if everything went fine and an Either[Exception]
-      otherwise.
+        Either[Exception String]: String if everything went fine, Exception
+        otherwise.
     """
     try:
         return fetch(url).map(lambda r: str(BeautifulSoup(r, 'xml')))
@@ -73,12 +72,11 @@ def fetch_json(url):
     Retrieves json data from an URL and wraps it in an Either object.
 
     Args:
-      url: An URL to fetch.
-      timeout: Sets a timeout delay (Optional).
+        url (str): An URL to fetch.
 
     Returns:
-      An Either[Unicode] if everything went fine and an Either[Exception]
-      otherwise.
+        Either[Exception Unicode]: Unicode if everything went fine and
+            Exception otherwise.
     """
     try:
         return fetch(url).map(json.load)
@@ -94,12 +92,13 @@ def build_service_url(parts=None, service_name=''):
     builds a complete URL to reach and query this Web service on Gallica.
 
     Args:
-      parts: URL parts used to build the URL. See the doc of urllib.parse
-      service_name: name of the service to query. service_name will be ignored
-                    if parts has a key named 'path'.
+        parts (dict): URL parts used to build the URL.
+            See the doc of urllib.parse
+        service_name (str): name of the service to query.
+            service_name will be ignored if parts has a key named 'path'.
 
     Returns:
-      A string representation of the URL built.
+        str: A string representation of the URL built.
     """
     this_parts = {"path": "services/"+service_name}
     all_parts = _BASE_PARTS.copy()
@@ -114,12 +113,12 @@ def build_base_url(parts=None, ark=None):
     to reach the document identified by this ARK ID on Gallica .
 
     Args:
-      parts: URL parts used to build the URL. See the doc of urllib.parse
-      ark: ARK ID of the document. Parameter ark must be unset if parts['path']
-      already contains the ARK ID of the document.
+        parts (dict): URL parts used to build the URL. See the doc of urllib.parse
+        ark (str): ARK ID of the document. Parameter ark must be unset if parts['path']
+            already contains the ARK ID of the document.
 
     Returns:
-      The URL to reach the document identified by ark, as a string.
+        str: The URL to reach the document identified by ark, as a string.
     """
     this_parts = {"path": str(ark)}
     all_parts = _BASE_PARTS.copy()
@@ -127,22 +126,25 @@ def build_base_url(parts=None, ark=None):
     all_parts.update(parts)
     return build_url(all_parts)
 
-def build_url(parts):
+def build_url(parts, quote_via=urllib.parse.quote_plus):
     """Creates a URL from a dictionary of parts.
 
     Creates a URL from a dictionary of urllib parts. See the documentation
     of urllib.parses.
 
     Args:
-      parts: The parts of the URL to build.
+        parts (dict): The parts of the URL to build.
+        quote_via (function): A function to encode spaces and special characters.
+            Defaults to quote_plus. See the documentations of
+            urllib.parse.urlencode.
 
     Returns:
-      The URL as a string.
+        str: The URL as a string.
     """
     all_parts = parts.copy()
     query = parts.get("query")
-    if query and not isinstance(query, str):
-        all_parts["query"] = urllib.parse.urlencode(query)
+    if query:
+        all_parts["query"] = urllib.parse.urlencode(query, quote_via=quote_via)
     elements = ["scheme", "netloc", "path", "params", "query", "fragment"]
     sorted_parts = [all_parts.get(key) for key in elements]
     return urllib.parse.urlunparse(sorted_parts)
