@@ -251,7 +251,7 @@ class Resource():
   def content_sync(self, startpage=1, npages=1, mode='pdf'):
       """Retrieves the content of a document.
 
-      Wraps Document API method 'Texte Brute' and 'PDF'.
+      Wraps Document API method 'Texte Brut' and 'PDF'.
       self.qualifier is ignored by content_sync.
       nPages default value is 1 to prevent Gallica generating unecessarily
       large pdfs.
@@ -260,7 +260,7 @@ class Resource():
       Args:
           startpage (:obj:int, optional): The starting page to retrieve. Default: 1
           npages (:obj:int, optional): The number of pages to retrieve. Default: 1
-          mode (:obj:int, optional): One of {'pdf, 'texteBrut', OCR}. Default: 1
+          mode (:obj:int, optional): One of {'pdf, 'texteBrut'}. Default: 1
       
       Returns:
           Either[Exception Unicode]: The Unicode data of the content.
@@ -270,7 +270,7 @@ class Resource():
       arkstr =pattern.format(self.ark.root, startpage, npages, mode)
       urlparts = {"path": arkstr}
       url = h.build_base_url(urlparts)
-      return h.fetch_xml_html(url).map(parsexmltodict)
+      return h.fetch(url) if mode =='pdf' else h.fetch_xml_html(url, 'html.parser')
 
   def ocr_data_sync(self, page):
       """Retrieves the OCR data from a ocrized document.
