@@ -11,40 +11,39 @@ Gallipy implements pythonic Monades, as described in [this awesome article](http
 
 Download the first 10 views of the document with ark id `ark:/12148/btv1b90017179` in PDF format and save it on the disk.
 ```python
-from gallipy import Resource
+from gallipy import Resource, Ark
 
-my_ark = 'ark:/12148/btv1b90017179'
-
-def save(either):
-  # If Left: either holds an exception...
+def save(either, filename):
+  # Handle exceptions here
   if either.is_left:
     raise either.value
   # Otherwise we can safely unwrap its content.
-  with open('btv1b90017179.pdf','wb') as file:
+  with open(filename,'wb') as file:
     file.write(either.value)
+  return either  # Enables method chaining.
 
 # Async call: save(e) is a callback method.
-Resource(my_ark).content(startview=1, nviews=10, mode='pdf').map(save)
+my_ark = 'ark:/12148/bpt6k5619759j'
+filename = 'bpt6k5619759j.pdf'
+Resource(my_ark).content(startview=1, nviews=10, mode='pdf').map(lambda x: save(x, filename))
 ```
 
 **Example of use #2**
 Retrieve the first issue of the periodical journal *Le Journal de Toto* for the year 1937, then save this document as a PDF file.
 ```python
-from gallipy import Resource, Ark
-
 def retrieve_first_issue(issues):
-  arkname = issues['issues']['issue'][0]['@ark']
+  if issues.is_left:
+    return issues
+  arkname = issues.value['issues']['issue'][0]['@ark']
   issue_ark = Ark(naan='12148', name=arkname)
   issue = Resource(issue_ark)
-  f = issue.content_sync(mode='pdf')  # Sync call, get an Either
-  
-  # Write f to disk only if content_sync succeeded, i.e. f is an Either::Right.
-  f.map(lambda data: open('lejournaldetoto.pdf','wb').write(data))
+  return issue.content_sync(mode='pdf')  # Sync call, get an Either
 
 # Fetch the resource metadata with the service Issues and get the ARK id of the first issue in 1937
-my_resource = Resource('https://gallica.bnf.fr/ark:/12148/cb32798952c')
-issues = my_resource.issues(year=1937)  # Async call
-issues.map(retrieve_first_issue)
+my_ark = 'https://gallica.bnf.fr/ark:/12148/cb32798952c'
+filename = 'cb32798952c.pdf'
+issues = Resource(my_ark).issues(year=1937)  # Async call
+issues.map(retrieve_first_issue).map(lambda x: save(x, filename))
 ```
 
 # Getting started
