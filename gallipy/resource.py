@@ -103,10 +103,11 @@ class Resource():
         """
         return Future.asyn(self.pagination_sync)
 
-    def image_preview(self, resolution='thumbnail'):
+    def image_preview(self, resolution='thumbnail', view=1):
       """
       """
-      return Future.asyn(self.image_preview_sync)
+      l = lambda: self.image_preview_sync(resolution, view)
+      return Future.asyn(l)
 
     def fulltext_search(self, query='', view=1, results_per_set=10):
       """
@@ -131,13 +132,13 @@ class Resource():
       l = lambda: self.ocr_data_sync(view)
       return Future.asyn(l)
 
-    def iiif_info(self, image=''):
+    def iiif_info(self, view=''):
       """
       """
       l = lambda: self.iiif_info_sync(image)
       return Future.asyn(l)
 
-    def iiif_data(self, image='', region=None, size='full', rotation=0, quality='native', imformat='png'):
+    def iiif_data(self, view='', region=None, size='full', rotation=0, quality='native', imformat='png'):
       """
       """
       l = lambda: self.iiif_data_sync(image, region, size, rotation, quality, imformat)
@@ -229,7 +230,7 @@ class Resource():
         url = h.build_base_url({"path":'{}/f{}.{}'.format(self.ark.root, view, resolution)})
         return h.fetch(url)
 
-    def fulltext_search_sync(self, query, results_per_set=10):
+    def fulltext_search_sync(self, query, view=1, results_per_set=10):
         """Performs a full-text search in a plain-text Resource (sync version).
 
         Wraps Document API service 'ContentSearch'.
@@ -257,7 +258,7 @@ class Resource():
                 containing the set of results as an OrderedDict.
                 Otherwise, a Left object containing an Exception.
         """
-        urlparts = {"query": {"ark": self.ark.name, "query": query, "startResult": results_per_set}}
+        urlparts = {"query": {"ark": self.ark.name, "query": query, "startResult": results_per_set, "page":view}}
         url = h.build_service_url(urlparts, service_name="ContentSearch")
         return h.fetch_xml_html(url).map(parsexmltodict)
 
