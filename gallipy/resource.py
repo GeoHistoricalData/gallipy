@@ -337,7 +337,6 @@ class Resource():
         # No image param : user wants the whole document infos
         path = '{}/{}/{}'.format('iiif', self.ark.root, 'manifest.json')
       url = h.build_base_url({"path":path})
-      print(url)
       return h.fetch_json(url).map(dict)
 
     def iiif_data_sync(self, view=1, region=None, size='full', rotation=0, quality='native', imformat='png'):
