@@ -51,7 +51,7 @@ issues.map(retrieve_first_issue)
 
 ## Installation
 
-`pip install gallipy`
+`python setup.py install --user`
 
 Gallipy requires **Python 3.5 or higher**. If you want to use it with Python 2.7.x, [do not hesitate to contribute](https://gist.github.com/Chaser324/ce0505fbed06b947d962) to this project.
 
