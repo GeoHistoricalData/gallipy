@@ -248,13 +248,13 @@ class Resource():
       url = h.build_service_url(urlparts, service_name="Toc")    
       return h.fetch_xml_html(url, 'html.parser')
 
-  def content_sync(self, startpage=1, npages=1, mode='pdf'):
+  def content_sync(self, startpage=1, npages=None, mode='pdf'):
       """Retrieves the content of a document.
 
       Wraps Document API method 'Texte Brut' and 'PDF'.
       self.qualifier is ignored by content_sync.
-      nPages default value is 1 to prevent Gallica generating unecessarily
-      large pdfs.
+      If npages is not defined, the wholed document is downloaded using
+      metadata retrieved by pagination_sync. 
       Qualifiers are ignored.
       
       Args:
@@ -266,8 +266,16 @@ class Resource():
           Either[Exception Unicode]: The Unicode data of the content.
               Otherwise, a Left object containing an Exception.
       """
+      _npages = 1
+      if not npages:
+        either = self.pagination_sync()
+        if not either.is_left:
+            _npages = int(either.value.get('livre').get('structure').get('nbVueImages'))
+      else:
+        _npages = npages
+      _npages = _npages-startpage+1
       pattern = '{}/f{}n{}.{}'
-      arkstr =pattern.format(self.ark.root, startpage, npages, mode)
+      arkstr =pattern.format(self.ark.root, startpage, _npages, mode)
       urlparts = {"path": arkstr}
       url = h.build_base_url(urlparts)
       return h.fetch(url) if mode =='pdf' else h.fetch_xml_html(url, 'html.parser')
