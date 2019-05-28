@@ -1,28 +1,50 @@
-# Gallipy: yet another python wrapper for the Gallica APIs
+# Gallipy: yet another Python wrapper for the Gallica APIs
 
-Gallipy provides a simple access to gallica.bnf.fr [Document](http://api.bnf.fr/api-document-de-gallica) and [IIIF](http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica). The [Search API](http://api.bnf.fr/api-gallica-de-recherche) is not yet implemented. APIs are wrapped in a single class `Resource`, which is basically the 'R' in 'Archival Resouce Key'.
+Gallipy provides a pythonic way to access, query and retrieve (meta)data from gallica.bnf.fr, the digital library of the French National Library.
+Gallipy wraps gallica's APIs [Document](http://api.bnf.fr/api-document-de-gallica) and [IIIF](http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica) in one single class named `Resource`, which basically which basically represents the 'R' in *Archival Resource Key*.
 
-*Why a new package instead of forking Pyllica or PyGallica?*
-I know, "thou should not reinvent the wheel"...but [you can't tell me what to do](https://www.youtube.com/watch?v=RYDy_nlgi5Q)!
-Also I wanted to play with pythonic monades from [this **awesome** article](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) by Alexey Karasev!
+The [Search API](http://api.bnf.fr/api-gallica-de-recherche) is not yet implemented.
 
-**Example**
+Gallipy implements pythonic Monades, as described in [this awesome article](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) by Alexey Karasev. Monades Either/Maybe and Future are extensively used by gallipy.
 
+**Example of use #1**
+
+Download the first 10 views of the document with ark id `ark:/12148/btv1b90017179` in PDF format and save it on the disk.
+```python
+from gallipy import Resource
+
+my_ark = 'ark:/12148/btv1b90017179'
+
+def save(either):
+  # If Left: either holds an exception...
+  if either.is_left:
+    raise either.value
+  # Otherwise we can safely unwrap its content.
+  with open('btv1b90017179.pdf','wb') as file:
+    file.write(either.value)
+
+# Async call: save(e) is a callback method.
+Resource(my_ark).content(startview=1, nviews=10, mode='pdf').map(save)
+```
+
+**Example of use #2**
 Retrieve the first issue of the periodical journal *Le Journal de Toto* for the year 1937, then save this document as a PDF file.
 ```python
+from gallipy import Resource, Ark
+
 def retrieve_first_issue(issues):
   arkname = issues['issues']['issue'][0]['@ark']
-  issue = Resource('ark:/12148/{}'.format(arkname))
-
-  f = issue.content(mode='pdf') # Fetch the content of issue. f : Future[Either[Exception Binary]] 
-  # If fetch succeeded, write the binary content to a file.
-  bs_to_file = lambda bs : open('lejournaldetoto.pdf','wb').write(bs)
-  f.map(lambda x : x.map(bs_to_file))
+  issue_ark = Ark(naan='12148', name=arkname)
+  issue = Resource(issue_ark)
+  f = issue.content_sync(mode='pdf')  # Sync call, get an Either
+  
+  # Write f to disk only if content_sync succeeded, i.e. f is an Either::Right.
+  f.map(lambda data: open('lejournaldetoto.pdf','wb').write(data))
 
 # Fetch the resource metadata with the service Issues and get the ARK id of the first issue in 1937
-my_resource = Resource('https://gallica.bnf.fr/ark:/12148/cb32798952c/date')
-issues = my_resource.issues(date=1937)  # issues: Future[Resource]
-issues.map(retrieve_first_issue)  # retrieve_first_issue is the callback function
+my_resource = Resource('https://gallica.bnf.fr/ark:/12148/cb32798952c')
+issues = my_resource.issues(year=1937)  # Async call
+issues.map(retrieve_first_issue)
 ```
 
 # Getting started
@@ -62,26 +84,19 @@ else:
 Gallipy allows for synchronous or asynchronous queries:
 ```python
 # Asynchronous call
-my_resource.issues(date=1937)  # issues: Resource -> Future[Either[Exception Dict]]
+my_resource.issues(year=1937)  # Returns Future[Either[Exception Dict]]
 
 # Synchronous call
-my_resource.issues_sync(date=1937) # issues_sync: Resource -> Either[Exception Dict]
+my_resource.issues_sync(year=1937)  # Returns Either[Exception Dict]
 ```
-**Pythonic monades**
+**Monadic objects**
 
-All methods available from `Resource` return `Either` objects for synchronous methods and `Future` objects for asynchronous ones.
-The classes `Either` and `Future` are implementation of the Either and Future *Monades* used in functional programming.
-Here, a `Monade` is just some kind of wrapper that takes some object of type a and put it inside an object of type `M[a]` where M is a subclass of `Monade`. 
-The class `Monade` defines three functions : 
-- `pure : x -> M[y]`: which accepts an object of type *x* and returns an object of monadic type *M[x]*.
-- `map: (x -> y) -> (M[x] -> M[y])`: takes some function f: x -> y and 'converts' it to a new function that applies to some M[x] and returns a M[y]. Basically, it applies f to the object wrapped inside a monade object and returns another monade object that wraps the result of f.
-- `flat_map: (x -> M[y]) -> (M[x] -> M[y])`: Let say there is f: String -> Monade[String]. If you map f on some x: Monade[String] you'll get a y: Monade[Monade[String]]). Not very cool, right? But with flat_map you'll end with a simple y: Monade[String].
-For an in-depth explanation, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) and [this](https://medium.freecodecamp.org/demystifying-the-monad-in-scala-cc716bb6f534)
+All methods available from `Resource` return `Either` monadic objects for synchronous methods and `Future` objects for asynchronous ones.
+I won't go into details about monades here because, honestly, I don't know much. Again, read [this](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) for more details & explanations.
 
 **Either monade**
 
-The Either monade is a very elegant way to deal with Exceptions. It allows to wrap them inside a stable object that won't *ever* break your code. Then, you decide where to unwrap and deal with the exception.
-Either objects can be of two types: `Right[x]` if x is 'valid' (whatever it means)  and `Left[x]` otherwise. In Gallipy `Left` is only used to wrap exceptions.
+The Either monade is a very elegant way to deal with Exceptions. Either objects can be of two types: `Right[x]` if x is 'valid'(whatever it means)  and `Left[x]` otherwise. In Gallipy `Left` is only used to handle exceptions.
 
 Here is an example with the Gallica service Pagination:
 ```python
@@ -94,7 +109,9 @@ either = r.pagination_sync()
 if either.map(print).is_left:
   raise either.value
 ```
-**Future monade**
+Notice how this allows to deal with exceptions where you want, when you want : your program is safe as long as you don't unwrap the Either object.
+
+**Future**
 
 Futures are kinda similar to Javascript Promises. They let you execute a function asynchronously in a light, elegant way.
 In Gallipy, all synchronous functions return some `x: Future[Either[...]]`:
@@ -110,81 +127,71 @@ def callback(either):
 r.pagination().map(callback)
 ```
 
-## Document API
+
+
+### Document API
 See the [official documentation](http://api.bnf.fr/api-document-de-gallica) for more details.
+To get more information on a method, use `help(gallipy.some_method)` or you can read the sources as their contains docstrings for most API methods.
+All methods are instance methods of the class `Resource`.
+
 #### Issues
-Retrieve metadata about a periodical journal. The optional parameter `date` will return metadata about all the issues that are available for a specific year.
+Retrieves metadata about a periodical journal. The optional parameter `year` will return metadata about all the issues that are available for a specific year.
 ```python
-r = Resource('ark:/12148/cb32798952c/date')
-# Resource -> Future[Either[Exception Dict]]
-r.issues(date=1937)
-# Resource -> Either[Exception Dict]
-r.issues_sync()
+def issues(self, year=''):  # Async
+def issues_sync(self, year=''):  # Sync
 ```
 #### OAIRecord
 Retrieve the OAI record of a given document.
 ```python
-r = Resource('ark:/12148/bpt6k5738219s')
-# Resource -> Future[Either[Exception Dict]]
-r.oairecord()
-# Resource -> Either[Exception Dict]
-r.oairecord_sync()
+def oairecord(self):  # Async
+def oairecord_sync(self):  # Sync
 ```
 
 #### Pagination
-Get paging informations about a document.
+Gets paging information about a document.
 ```python
-r = Resource('ark:/12148/bpt6k5738219s')
-# Resource -> Future[Either[Exception Dict]]
-r.oairecord()
-# Resource -> Either[Exception Dict]
-r.oairecord_sync()
+def pagination(self):  # Async
+def pagination_sync(self):  # Sync
 ```
-
+#### Image Preview
+Retrieves the preview image of a view in a resource.
+```python
+def image_preview(self, resolution='thumbnail', view=1):
+def image_preview_sync(self, resolution='thumbnail', view=1):
+```
 #### Table of content
 Get the ToC of a document, in HTML.
 ```python
-r = Resource('ark:/12148/bpt6k83037p/f143')
-# Resource -> Future[Either[Exception HTMLString]]
-r.toc()
-# Resource -> Either[Exception HTMLString]
-r.toc_sync()
+def toc(self):
+def toc_sync(self):
 ```
-
 #### Full-text search
-Execute search queries on the text of a document. 
+Executes search queries on the text of a document. 
 ```python
-r = Resource('ark:/12148/btv1b6930733g')
-# Resource -> Future[Either[Exception Dict]]
-r.fulltextsearch('hugo') # Search for 'hugo' in the whole document
-# Resource -> Either[Exception Dict]
-r.fulltextsearch_sync(query='hugo',page=10, startResult=1)  # Search for 'hugo' at page 10 and return all results in one 'page'.<
+def fulltext_search(self, query='', view=1, results_per_set=10): 
+def fulltext_search_sync(self, query, view=1, results_per_set=10):
 ```
-
 #### Content retrieval
-Retrieve the content of a document. This is how you get the full PDFs.
+Retrieves the content of a document. This is how you get the full PDFs of any document.
 
 Optional parameter `mode` can be 'pdf' or 'texteBrut' ('texteImage' is not supported). Default is 'pdf.'
 ```python
-r = Resource('ark:/12148/btv1b693073')
-# Resource -> Future[Either[Exception Binary]]
-r.content() # Get all pages from r as a PDF
-
-# Get pages 10 to 20 and save them as an html file.
-e = r.content_sync(startPage=10, nPages=10, mode='textBrut')  
-e.map(lambda x : open('myresource.html','wb').write(x))
+def content(self, startview=None, nviews=None, mode='pdf'):
+def content_sync(self, startview=None, nviews=None, mode='pdf'):
 ```
-The parameters `startPage` and `nPages` have precedence over the resource's ARK qualifier. Wich means that `Resource('ark:/12148/btv1b693073/f1n10.textBrut').content(startPage=10, nPages=10, mode=pdf)` will return pages 10 to 20 of resource `ark:/12148/btv1b693073` in PDF. `mode` will always be appended to the end of the qualifier.
 
-## IIIF API
-
-#### Document and image metadata
-Retrieve metadata from an image or a whole document in JSON. 
+#### OCR data
+Retrieves the OCR data from a OCRized document.
 ```python
-r = Resource('ark:/12148/btv1b90017179')
-
-r.iiif_info(image='f15')  # Get metadata of page 15.
-r.iiif_info_sync()  # Get metadata of the document  'ark:/12148/btv1b90017179'
+def ocr_data(self, view):
+def ocr_data_sync(self, view):
+```
+### IIIF API
+#### Document and image metadata
+Retrieves metadata from an image or a whole document in JSON. 
+```python
+def iiif_info(self, view=''):
+def iiif_info_sync(self, view=1):
 ```
 
 #### Image retrieval
@@ -193,31 +200,12 @@ Retrieve an image using the IIIF API.
 Parameters are detailed in http://api.bnf.fr/api-iiif-de-recuperation-des-images-de-gallica.
 `region` is a 4-elements object of any iterable type.
 
-The ARK qualifier has precedence over the parameter `image`, which means that `image` will be ignored if the resource's ARK is qualified.
-
 ```python
-r = Resource('ark:/12148/btv1b90017179')
-
-r.iiif_data(image='f15', imgtype='png')
-e = r.iiif_data_sync(image='f15', region=(0, 0, 2400, 3898), imgtype='png')
+def iiif_data(self, view='', region=None, size='full', rotation=0, quality='native', imformat='png'):
+    def iiif_data_sync(self, view=1, region=None, size='full', rotation=0, quality='native', imformat='png'):
 ```
 
-#### Usage
-
-Let's retrieve the first image of a document in native resolution
-```python
-ark = Ark.parse('https://gallica.bnf.fr/ark:/12148/btv1b90017179').value
-r = Resource(ark)
-
-metadata = r.iiif_info_sync().value
-width = metadata['sequences'][0]['canvases'][0]['width']
-height = metadata['sequences'][0]['canvases'][0]['height']
-
-with open(ark.name+'_f1.png','bw') as o:
-  o.write(r.iiif_data_sync(image='f1',fileformat='png', region=(0,0,width, height)).value)
-```
-
-# Parsing ARKs
+## Parsing ARKs
 
 Gallipy provides a parser for ARK urls and ARK ids.
 The parser uses `rfc` for the optional non-id part of an ARK and Lark for the actual ARK id.
@@ -241,5 +229,4 @@ ark.map(lambda x : print(repr(x.arkid)))
 
 # Todo
 - Implement the Search API.
-- Implement the OCR retrieval.
-- Provide an object representation of API response rather than  `OrderedDict`
+- Provide an better representation of API response than a simple  `OrderedDict`.
