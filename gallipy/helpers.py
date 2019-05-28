@@ -35,34 +35,35 @@ def fetch(url):
         timeout (:obj:int, optional): Sets a timeout delay (Optional).
 
     Returns:
-        Either[Exception Unicode]: Unicode if everything went fine
+        Either[Exception Dict]: {data:Unicode, headers:dict} if everything went fine
             and Exception otherwise.
     """
     try:
-        with urllib.request.urlopen(url, timeout=30) as response:
-            return Either.pure(response.read())
+        with urllib.request.urlopen(url, timeout=30) as res:
+            return Either.pure({"data":res.read(), "headers":res.headers})
     except urllib.error.URLError as ex:
         pattern = "Error while fetching URL {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
 
-def fetch_xml(url):
-    """Fetches xml from an URL
+def fetch_xml_html(url, parser='xml'):
+    """Fetches xml or html from an URL
 
-    Retrieves xml data from an URL and wraps it in an Either object.
-    The xml data is a simple string.
+    Retrieves xml or html data from an URL and wraps it in an Either object.
+    The resulting data is a simple utf-8 string.
 
     Args:
       url (str): An URL to fetch.
+      parser (str): Any BeautifulSoup4 parser, e.g. 'html.parser'. Default: xml.
 
     Returns:
         Either[Exception String]: String if everything went fine, Exception
         otherwise.
     """
     try:
-        return fetch(url).map(lambda r: str(BeautifulSoup(r, 'xml')))
+        return fetch(url).map(lambda res: str(BeautifulSoup(res['data'], parser)))
     except urllib.error.URLError as ex:
-        pattern = "Error while fetching XML from URL {}\n{}"
+        pattern = "Error while fetching XML from {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
 
@@ -79,9 +80,9 @@ def fetch_json(url):
             Exception otherwise.
     """
     try:
-        return fetch(url).map(json.load)
+        return fetch(url).map(lambda res: json.load(res['data']))
     except urllib.error.URLError as ex:
-        pattern = "Error while fetching JSON from URL {}\n{}"
+        pattern = "Error while fetching JSON from {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
 
