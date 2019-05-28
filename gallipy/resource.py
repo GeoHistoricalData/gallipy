@@ -56,7 +56,7 @@ class Resource():
     # ASYNCHRONOUS METHODS
     # ---
 
-    def issues(self, date=''):
+    def issues(self, year=''):
         """Fetches metadata about the issues of a periodical journal (Async version). 
 
         The Document API service Issues retrieves metadata about a periodical journal.
@@ -72,7 +72,7 @@ class Resource():
                 This Either will hold the fetched data (Right) or an Exception (Left).
                 For more details, see Resource.issues_sync.
         """
-        return Future.asyn(lambda: self.issues_sync(date))
+        return Future.asyn(lambda: self.issues_sync(year))
 
     def oairecord(self):
         """Retrieves the OAI record of a document (Async version). 
