@@ -1,4 +1,6 @@
-# Shamelessly copy/pasted from this awesome article : https://www.toptal.com/javascript/option-maybe-either-future-monads-js by Alexey Karasev
+# Shamelessly copy/pasted from this awesome article :
+# https://www.toptal.com/javascript/option-maybe-either-future-monads-js*
+# by Alexey Karasev
 
 from functools import reduce
 import threading

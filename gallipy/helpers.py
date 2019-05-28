@@ -35,12 +35,12 @@ def fetch(url):
         timeout (:obj:int, optional): Sets a timeout delay (Optional).
 
     Returns:
-        Either[Exception Dict]: {data:Unicode, headers:dict} if everything went fine
+        Either[Exception Unicode]: The response content if everything went fine
             and Exception otherwise.
     """
     try:
         with urllib.request.urlopen(url, timeout=30) as res:
-            return Either.pure({"data":res.read(), "headers":res.headers})
+            return Either.pure(res.read())
     except urllib.error.URLError as ex:
         pattern = "Error while fetching URL {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
@@ -61,7 +61,7 @@ def fetch_xml_html(url, parser='xml'):
         otherwise.
     """
     try:
-        return fetch(url).map(lambda res: str(BeautifulSoup(res['data'], parser)))
+        return fetch(url).map(lambda res: str(BeautifulSoup(res, parser)))
     except urllib.error.URLError as ex:
         pattern = "Error while fetching XML from {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
@@ -80,7 +80,7 @@ def fetch_json(url):
             Exception otherwise.
     """
     try:
-        return fetch(url).map(lambda res: json.load(res['data']))
+        return fetch(url).map(json.loads)
     except urllib.error.URLError as ex:
         pattern = "Error while fetching JSON from {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))

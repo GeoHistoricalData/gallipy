@@ -9,7 +9,7 @@ by the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
@@ -47,17 +47,23 @@ class Ark:
     [urlscheme://authority/]ark:/naan/name[/qualifier].
 
     Args:
-        naan (str): Name Assigning Authority Number.
-        name (str): ARK ID name.
-        qualifier (:obj:`str`, optional): ARK qualifier.
-        scheme (:obj:`str`, optional): The scheme of the ARK.
-            Can be any http scheme, or 'ark'. Defaults to 'ark'.
-        authority (:obj:`str`, optional): The naming authority, e.g. gallica.bnf.fr.
-            If authority is set them scheme must be a http scheme.
+        ark_parts (dict): A dictionary of ark parts.
+            The following keys are valid:
+                naan (str): Name Assigning Authority Number.
+                name (str): ARK ID name.
+                qualifier (:obj:`str`, optional): ARK qualifier.
+                scheme (:obj:`str`, optional): The scheme of the ARK.
+                    Can be any http scheme, or 'ark'. Defaults to 'ark'.
+                authority (:obj:`str`, optional): The naming authority, e.g. gallica.bnf.fr.
+                    If authority is set them scheme must be a http scheme.
+            ark_parts Must contain at least keys 'naan' and 'name'.
+            If key 'authority' is set, key 'scheme' must be different from 'ark'.
+
     Attributes:
         ark_parts (dict): A dictionary of ark parts. Must contain at least keys
             'naan' and 'name'. If key 'authority' is set, key 'scheme' must be
             different from 'ark'.
+
     Raises:
         ValueError: If parameters naan or name are undefined, or if scheme='ark'
             and authority is set.
@@ -158,12 +164,22 @@ class Ark:
         return Ark(**parts)
 
     @property
+    def root(self):
+        """Get the root (i.e the ark id without qualifier) of this ARK.
+
+        Returns:
+            Ark: the root ark id of self.
+        """
+        return Ark(naan=self.naan, name=self.name)
+
+    @property
     def parts(self):
         """A copy of the parts composing this ARK."""
         return self._ark_parts.copy()
 
     def is_arkid(self):
         """The ARK ID of this Ark.
+
         Returns:
             bool: True if self is an ARK ID, False if self is a full ARK URL.
         """
@@ -172,11 +188,15 @@ class Ark:
     @staticmethod
     def parse(ark_str):
         """Parse an ARK URL or an ARK ID string into an Ark oject
-            Args:
-                ark_str (str): The string to parse.
 
-            Returns:
-                Ark: The parsed ARK.
+        Args:
+            ark_str (str): The string to parse.
+
+        Returns:
+            Ark: The parsed ARK.
+
+        Raises:
+            ArkParsingError: If parsing fails.
         """
         try:
             parts = rfc3987.parse(ark_str, rule="URI")  # Ensure ark is a URI
@@ -198,7 +218,6 @@ class Ark:
             return Either.pure(ark)
 
         except (TypeError, ValueError, ParseError, UnexpectedCharacters) as ex:
-            print(str(ex))
             return Left(ArkParsingError(str(ex), ark_str))
 
     def __str__(self):
