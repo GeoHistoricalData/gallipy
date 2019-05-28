@@ -22,9 +22,9 @@ def save(either, filename):
     file.write(either.value)
   return either  # Enables method chaining.
 
-# Async call: save(e) is a callback method.
 my_ark = 'ark:/12148/bpt6k5619759j'
 filename = 'bpt6k5619759j.pdf'
+# Async call: save(either, filename) is a callback method.
 Resource(my_ark).content(startview=1, nviews=10, mode='pdf').map(lambda x: save(x, filename))
 ```
 
