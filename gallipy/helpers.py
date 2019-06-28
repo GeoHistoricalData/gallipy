@@ -41,7 +41,7 @@ def fetch(url):
     try:
         with urllib.request.urlopen(url, timeout=30) as res:
             return Either.pure(res.read())
-    except urllib.error.URLError as ex:
+    except Exception as ex:
         pattern = "Error while fetching URL {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
         return Left(err)
