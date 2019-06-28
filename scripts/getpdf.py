@@ -67,6 +67,7 @@ def split_fetching(resource, from_view, to_view ):
     r = fetch_chunk(resource, start_at, nviews, NUMTRIALS)
     if r.is_left:
       raise Exception("Something went wrong.")
+    data.append(PdfFileReader(io.BytesIO(r.value)))
   return data
 
 def fetch_chunk(resource, from_view, nviews, trials_left):
