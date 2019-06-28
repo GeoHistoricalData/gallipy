@@ -16,7 +16,7 @@ parser.add_argument('--start', type=int, default=1,
 parser.add_argument('--end', type=int, default=0,
                     help='Index of the last view to download.')
 parser.add_argument('--split', action='store_true',
-                    help='If defined, the script will download the resource in chunks of '+CHUNKSIZE+' views. This is usefull for large resources with more than 1000-1500 views.')
+                    help='If defined, the script will download the resource in chunks of '+str(CHUNKSIZE)+' views. This is usefull for large resources with more than 1000-1500 views.')
 parser.add_argument('outputfile', type=str,
                     help='The output PDF file.') 
 
