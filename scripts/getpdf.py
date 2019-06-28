@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from gallipy import Resource, Ark
 from gallipy.monadic import Left
 from PyPDF2 import PdfFileReader, PdfFileWriter
@@ -24,7 +26,6 @@ def get_pdf(ark, outputfile, from_view, to_view, split):
   if not to_view:
     to_view = int(r.pagination_sync().value['livre']['structure']['nbVueImages'])
   data = []
-  success = False  
   
   if split:
     data = split_fetching(r, from_view, to_view)
