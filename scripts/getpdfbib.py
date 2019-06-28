@@ -14,6 +14,7 @@ if __name__ == "__main__":
     with open(args.bibtex) as bibtex_file:
         bib_database = bibtexparser.load(bibtex_file)
         for idx, bib in enumerate(bib_database.entries):
+          entrytype = bib['ENTRYTYPE']
           bibkey = bib['ID']
           ark = bib[args.key]
           if bib['vues']:
@@ -21,5 +22,5 @@ if __name__ == "__main__":
           else:
             vues = [1,0]
 
-          print("Downloading entry {}: {} [{}]{}".format(idx+1, bibkey, ark, ', views '+bib['vues']))
-          getpdf.get_pdf(ark, bibkey+bib['vues']+'.pdf', vues[0], vues[1], True)         
+          print("Downloading {} {}: {} [{}]{}".format(entrytype, idx+1, bibkey, ark, ', views '+bib['vues']))
+          getpdf.get_pdf(ark, "{}_{}_{}.pdf".format(entrytype, bibkey,bib['vues']), vues[0], vues[1], True)         

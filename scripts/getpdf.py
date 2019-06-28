@@ -5,7 +5,7 @@ from gallipy.monadic import Left
 from PyPDF2 import PdfFileReader, PdfFileWriter
 import io, glob, argparse, math, sys
 
-CHUNKSIZE = 400 # Number of pages to fetch at once.
+CHUNKSIZE = 100 # Number of pages to fetch at once.
 NUMTRIALS = 0 # If a fetch fails due to a timeout, try again at most NUMTRIALS times. 
 
 parser = argparse.ArgumentParser(description='A simple script to download the PDF version of an archival resource hosted by Gallica.')
