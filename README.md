@@ -7,6 +7,8 @@ The [Search API](http://api.bnf.fr/api-gallica-de-recherche) is not yet implemen
 
 Gallipy implements pythonic Monades, as described in [this awesome article](https://www.toptal.com/javascript/option-maybe-either-future-monads-js) by Alexey Karasev. Monades Either/Maybe and Future are extensively used by gallipy.
 
+**Folder /scripts** provides simple and convenient scripts to download PDFs from ARK strings or Bibtex entries.
+
 **Example of use #1**
 
 Download the first 10 views of the document with ark id `ark:/12148/btv1b90017179` in PDF format and save it on the disk.
