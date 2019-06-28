@@ -299,13 +299,14 @@ class Resource():
           either = self.pagination_sync()
           if not either.is_left:
               _nviews = int(either.value.get('livre').get('structure').get('nbVueImages'))
+              _nviews = _nviews-startview+1
         else:
           _nviews = nviews
-        _nviews = _nviews-startview+1
         pattern = '{}/f{}n{}.{}'
         arkstr =pattern.format(self.ark.root, startview, _nviews, mode)
         urlparts = {"path": arkstr}
         url = h.build_base_url(urlparts)
+        print(url)
         return h.fetch(url) if mode =='pdf' else h.fetch_xml_html(url, 'html.parser')
 
     def ocr_data_sync(self, view):
