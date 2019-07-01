@@ -8,10 +8,10 @@ Download views 10 to 35 from the resource `https://gallica.bnf.fr/ark:/12148/bpt
 ```bash
 ./getpdf.py https://gallica.bnf.fr/ark:/12148/bpt6k9764647w bpt6k9764647w.pdf --start 10 --end 35
 ```
-Download the entire resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w `. As downloading large resources tends to fail due to timeout from Gallica, get this resource in blocks of 150 views.
+Download the entire resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w `. As downloading large resources may fail due to timeouts, we get this resource in blocks of 150 views.
 
 ```bash
-./getpdf.py https://gallica.bnf.fr/ark:/12148/bpt6k9764647w bpt6k9764647w.pdf --start 10 --end 35 --blocksize 150
+./getpdf.py https://gallica.bnf.fr/ark:/12148/bpt6k9764647w bpt6k9764647w.pdf --blocksize 150
 ```
 
 #### Usage
@@ -19,7 +19,7 @@ Download the entire resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w `.
 usage: getpdf.py [-h] [-s START] [-e END] [--blocksize BLOCKSIZE]
                  ark outputfile
 
-A simple script to download the PDF version of an archival resource hosted by
+A simple script to download the PDF version of an archival resource stored on
 Gallica.
 
 positional arguments:
