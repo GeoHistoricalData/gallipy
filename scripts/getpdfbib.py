@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import bibtexparser, argparse
-import getpdf
+import getpdf, logging
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='A simple script to download the PDF version of an archival resource hosted by Gallica.')
 parser.add_argument('bibtex', type=str,
@@ -17,10 +19,11 @@ if __name__ == "__main__":
           entrytype = bib['ENTRYTYPE']
           bibkey = bib['ID']
           ark = bib[args.key]
-          if bib['vues']:
-            vues = [int(s) for s in bib['vues'].split('--') if s.isdigit()]
+          if bib.get('vues'):
+            vues = [int(s) for s in bib.get('vues').split('--') if s.isdigit()]
           else:
             vues = [1,0]
-
-          print("Downloading {} {}: {} [{}]{}".format(entrytype, idx+1, bibkey, ark, ', views '+bib['vues']))
-          getpdf.get_pdf(ark, "{}_{}_{}.pdf".format(entrytype, bibkey,bib['vues']), vues[0], vues[1], True)         
+          
+          logging.info("Downloading {} {}: {} [{}]{}".format(entrytype, idx+1, bibkey, ark, ', views {} to {}'.format(vues[0], vues[1]) if bib.get('vues') else ''))
+          name = "{}{}.pdf".format(bibkey,'_'+str(vues[0])+'_'+str(vues[1]) if bib.get('vues') else '')
+          getpdf.download_pdf(ark, name, vues[0], vues[1])
