@@ -1,7 +1,7 @@
 A few scripts based on Gallipy
 ===
 
-# getpdf.py: getting the PDF version of a resource hosted on Gallica from an ARK.
+## getpdf.py: getting the PDF version of a resource hosted on Gallica from an ARK.
 
 #### Examples
 Download views 10 to 35 from the resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w ` and save it as `bpt6k9764647w.pdf`.
