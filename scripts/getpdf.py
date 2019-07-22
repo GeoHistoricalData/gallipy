@@ -5,7 +5,7 @@ from gallipy.monadic import Left
 from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter
 import io, glob, argparse, math, sys, logging, os
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 NUMTRIALS = 5 # If a fetch fails due to a timeout, try again at most NUMTRIALS times.
 
@@ -44,7 +44,7 @@ def build_query_params(args):
     else:
         blocksize = args.blocksize
 
-    logging.debug("Downloading views {} to {} {} from resource {} with a total number of views of {} ".format(start, end, "by blocks of size" +str(blocksize) if blocksize else "", r.arkid, total_views))
+    logging.debug("Downloading views {} to {} {} from resource {} with {} views".format(start, end, "by blocks of size " +str(blocksize) if blocksize else "", r.arkid, total_views))
     return r, start, end, blocksize
 
 def download_pdf(ark, start, end, blocksize, outputfile):
@@ -88,29 +88,24 @@ def merge_partfiles(outfile, partfiles):
     merger.write(outfile)
     merger.close()
 
-
 def write_to_file(pdfdata, outfile, block_idx):
     with open(outfile,"wb+") as ostream:
         writer = PdfFileWriter()
-        start = 2 if block_idx > 0 else 1
+        start = 2 if block_idx > 0 else 0
         for i in range(start, pdfdata.getNumPages()):
           writer.addPage(pdfdata.getPage(i))
         writer.write(ostream)
 
 def fetch_block(resource, from_view, nviews, trial, reason):
   logging.debug("Fetching resource {} from view {} to view {} ({} views -- trial {})".format(resource.ark.arkid, from_view, from_view+nviews-1, nviews, NUMTRIALS-trial+1))
-  try:
-    res = resource.content_sync(startview=from_view, nviews=nviews, mode='pdf')
-  except Exception as e:
-    res = Left(e)
-    logging.critical("SHOULD NEVER HAPPEN")
-    logging.exception(e)
-  
-  if res.is_left and trial > 0:
-    logging.exception(res.value)
+
+  res = resource.content_sync(startview=from_view, nviews=nviews, mode='pdf')
+  if res.is_left and trial > 1:
+    if res.value:
+        logging.exception(res.value)
     logging.debug("Reason for calling fetch_block was: <"+reason+">.")
     logging.debug("Trials left: {}".format(trial-1))
-    fetch_block(resource, from_view, nviews, trial-1, reason)
+    return fetch_block(resource, from_view, nviews, trial-1, reason)
   return res
 
 if __name__ == "__main__":
