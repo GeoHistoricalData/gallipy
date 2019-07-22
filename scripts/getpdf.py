@@ -44,6 +44,7 @@ def build_query_params(args):
     else:
         blocksize = args.blocksize
 
+    logging.debug("Downloading views {} to {} {} from resource {} with a total number of views of {} ".format(start, end, "by blocks of size" +str(blocksize) if blocksize else "", r.arkid, total_views))
     return r, start, end, blocksize
 
 def download_pdf(ark, start, end, blocksize, outputfile):
@@ -98,8 +99,13 @@ def write_to_file(pdfdata, outfile, block_idx):
 
 def fetch_block(resource, from_view, nviews, trial, reason):
   logging.debug("Fetching resource {} from view {} to view {} ({} views -- trial {})".format(resource.ark.arkid, from_view, from_view+nviews-1, nviews, NUMTRIALS-trial+1))
-
-  res = resource.content_sync(startview=from_view, nviews=nviews, mode='pdf')
+  try:
+    res = resource.content_sync(startview=from_view, nviews=nviews, mode='pdf')
+  except Exception as e:
+    res = Left(e)
+    logging.critical("SHOULD NEVER HAPPEN")
+    logging.exception(e)
+  
   if res.is_left and trial > 0:
     logging.exception(res.value)
     logging.debug("Reason for calling fetch_block was: <"+reason+">.")
