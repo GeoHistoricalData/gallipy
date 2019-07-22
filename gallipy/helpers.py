@@ -40,7 +40,10 @@ def fetch(url):
     """
     try:
         with urllib.request.urlopen(url, timeout=30) as res:
-            return Either.pure(res.read())
+            content = res.read()
+            if content:
+                return Either.pure(content)
+            raise Exception("Empty response from {}".format(url))
     except Exception as ex:
         pattern = "Error while fetching URL {}\n{}"
         err = urllib.error.URLError(pattern.format(url, str(ex)))
