@@ -1,17 +1,17 @@
-A few scripts based on Gallipy
+Convenient scripts based on Gallipy
 ===
 
-## getpdf.py: getting the PDF version of a resource hosted on Gallica from an ARK.
+## getpdf.py: retrieves the PDF of a resource hosted on Gallica.
 
 #### Examples
 Download views 10 to 35 from the resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w ` and save it as `bpt6k9764647w.pdf`.
 ```bash
 ./getpdf.py https://gallica.bnf.fr/ark:/12148/bpt6k9764647w bpt6k9764647w.pdf --start 10 --end 35
 ```
-Download the entire resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w `. As downloading large resources may fail due to timeouts, we get this resource in blocks of 150 views.
+Download the entire resource `https://gallica.bnf.fr/ark:/12148/bpt6k9764647w `. As downloading large resources may fail due to timeouts, we get this resource in blocks of 100 views.
 
 ```bash
-./getpdf.py https://gallica.bnf.fr/ark:/12148/bpt6k9764647w bpt6k9764647w.pdf --blocksize 150
+./getpdf.py https://gallica.bnf.fr/ark:/12148/bpt6k9764647w bpt6k9764647w.pdf --blocksize 100
 ```
 
 #### Usage
