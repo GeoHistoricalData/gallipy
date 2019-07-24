@@ -11,7 +11,7 @@ import math
 import sys
 import logging
 import os
-from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter
+from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter, PageRange
 from gallipy import Resource
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
@@ -40,10 +40,10 @@ def download_pdf(resource, start, end, blocksize, trials, output_path):
                         bound[0],
                         bound[0]+bound[1]-1,
                         either.value))
-            pdfdata = to_pdffilereader(either.value)
-            partial = "%s.%d" % (output_path, idx)
+            pdfdata = either.flat_map(lambda v: PdfFileReader(io.BytesIO(v)))
+            partial = "{}.{}".format(output_path, idx)
             partials.append(partial)
-            write_partial(pdfdata, partial, idx)
+            write_pdfdata(pdfdata, partial)
         merge_partials(output_path, partials)
     except Exception as ex: # PEP8 will complain (W0703) but we don't care ¯\_(ツ)_/¯
         logging.exception(ex)
@@ -72,18 +72,17 @@ def compute_blocks(inf, sup, blocksize):
 def merge_partials(path, partials):
     """Merge partial pdfs in one single PDF"""
     merger = PdfFileMerger()
-    for partial in partials:
-        merger.append(partial)
+    for idx, partial in enumerate(partials):
+        opts = {"pages": PageRange('2:')} if idx else {}
+        merger.append(partial, **opts)
     merger.write(path)
     merger.close()
 
-def write_partial(pdfdata, outfile, block_idx):
+def write_pdfdata(pdffilereader, path):
     """Write a partial file"""
-    with open(outfile, "wb+") as ostream:
+    with open(path, "wb+") as ostream:
         writer = PdfFileWriter()
-        start = 2 if block_idx > 0 else 0
-        for i in range(start, pdfdata.getNumPages()):
-            writer.addPage(pdfdata.getPage(i))
+        writer.appendPagesFromReader(pdffilereader)
         writer.write(ostream)
 
 def fetch_block(resource, from_view, nviews, trials, reason):
@@ -104,7 +103,7 @@ def fetch_block(resource, from_view, nviews, trials, reason):
             return fetch_block(resource, from_view, nviews, trials-1, reason)
     return res
 
-def main():
+def parse_args():
     """The main : parse arguments and perform some validation before calling download_pdf()"""
     parser = argparse.ArgumentParser(description="""A simple script to download the PDF
                                         of an archival resource hosted on gallica.bnf.fr.""")
@@ -139,20 +138,12 @@ def main():
     mdata = resource.pagination_sync()
     if mdata.is_left:
         raise mdata.value
+
     total_views = int(mdata.value["livre"]["structure"]["nbVueImages"])
-
     start = clamp(pargs.start, 1, total_views)
-
-    if not pargs.end:
-        end = total_views
-    else:
-        end = clamp(pargs.end, start, total_views)
-
+    end = clamp(pargs.end, start, total_views) if pargs.end else total_views
     nviews = end-start+1
-    if not pargs.blocksize or pargs.blocksize > nviews:
-        blocksize = nviews
-    else:
-        blocksize = pargs.blocksize
+    blocksize = pargs.blocksize if pargs.blocksize or pargs.blocksize > nviews else nviews
 
     logging.debug(
         "Downloading views %d to %d %s from resource %s with %d views",
@@ -162,7 +153,7 @@ def main():
         resource.arkid,
         total_views)
 
-    download_pdf(resource, start, end, blocksize, pargs.trials, pargs.outputfile)
+    return resource, start, end, blocksize, pargs.trials, pargs.outputfile
 
 if __name__ == "__main__":
-    main()
+    download_pdf(*parse_args())
