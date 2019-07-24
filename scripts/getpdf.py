@@ -7,7 +7,6 @@ when its ARK is known.
 
 import io
 import argparse
-import math
 import sys
 import logging
 import os
@@ -110,11 +109,11 @@ def clamp(number, smallest, largest):
 def gallica_nviews(resource):
     """Ask Gallica"s API to know the total number of views of the resource"""
     mdata = resource.pagination_sync()
-    def get_from_dict(dict):
+    def get_from_dict(dic):
         try:
-            return monadic.Right(int(dict["livre"]["structures"]["nbVueImages"]))
-        except Exception as e:
-            return monadic.Left(e)
+            return monadic.Right(int(dic["livre"]["structures"]["nbVueImages"]))
+        except Exception as ex:
+            return monadic.Left(ex)
     nviews = mdata.flat_map(get_from_dict)
     if nviews.is_left:
         logging.debug("""Could not get the total number of views from Gallica.
@@ -159,7 +158,7 @@ def parse_args():
     nviews = gallica_nviews(resource)
     start = clamp(pargs.start, 1, nviews)
     end = clamp(pargs.end, start, nviews) if pargs.end else nviews
-    blocksize = clamp(pargs.blocksize,1,end-start+1)
+    blocksize = clamp(pargs.blocksize, 1, end-start+1)
     trials = pargs.trials or 1 # Force trial to be at least 1
 
     logging.debug(
@@ -170,7 +169,7 @@ def parse_args():
         resource.arkid,
         nviews)
 
-    return resource, start, end, blocksize, pargs.trials, pargs.outputfile
+    return resource, start, end, blocksize, trials, pargs.outputfile
 
 if __name__ == "__main__":
     download_pdf(*parse_args())
