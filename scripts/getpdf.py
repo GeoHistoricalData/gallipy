@@ -73,6 +73,8 @@ def merge_partials(path, partials):
     """Merge partial pdfs in one single PDF"""
     merger = PdfFileMerger()
     for idx, partial in enumerate(partials):
+        # Gallica appends 2 pages to each pdf fetched so we don't write those
+        # pagse except for the first partial
         opts = {"pages": PageRange('2:')} if idx else {}
         merger.append(partial, **opts)
     merger.write(path)
