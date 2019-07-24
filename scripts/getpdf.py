@@ -11,12 +11,16 @@ import math
 import sys
 import logging
 import os
+from collections import namedtuple
 from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter, PageRange
 from gallipy import Resource
+
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 DEFAULT_NUM_TRIALS = 5
+
+Block = namedtuple("Block", ("start", "n")) # Immutable named tuple
 
 def non_negative_int(value):
     """ Non negative integer"""
@@ -30,15 +34,15 @@ def download_pdf(resource, start, end, blocksize, trials, output_path):
     """ Download the PDF resource in blocks of size blocksize and save it to output_path"""
     partials = []
     try:
-        for idx, bound in enumerate(compute_blocks(start, end, blocksize)):
-            reason = "Download block "+str(bound)
-            either = fetch_block(resource, bound[0], bound[1], trials, reason)
+        for idx, block in enumerate(generate_blocks(start, end, blocksize)):
+            reason = "Download block "+str(block)
+            either = fetch_block(resource, block.start, block.n, trials, reason)
             if either.is_left:
                 raise Exception(
                     "Failed to fetch resource {} from view {} to view {}.\nReason: {}".format(
                         resource.arkid,
-                        bound[0],
-                        bound[0]+bound[1]-1,
+                        block.start,
+                        block.start+block.n-1,
                         either.value))
             pdfdata = either.flat_map(lambda v: PdfFileReader(io.BytesIO(v)))
             partial = "{}.{}".format(output_path, idx)
@@ -60,14 +64,12 @@ def to_pdffilereader(bdata):
     """Wrap  any pdf binary data in a PdfFileReader object"""
     return PdfFileReader(io.BytesIO(bdata))
 
-def compute_blocks(inf, sup, blocksize):
+def generate_blocks(inf, sup, blocksize):
     """Compute the blocks based on the total view range and a block size"""
-    blocks = []
-    for i in range(0, math.ceil((sup-inf+1)/blocksize)):
-        start = inf+i*blocksize
-        nviews = blocksize if (start+blocksize) <= sup else sup-start+1
-        blocks.append((start, nviews))
-    return blocks
+    block_starts = range(inf, sup+1, blocksize) # range() is exclusive
+    for start in block_starts:
+        block_n = sup-start+1 if start+blocksize > sup else blocksize
+        yield Block(start=start, n=block_n)
 
 def merge_partials(path, partials):
     """Merge partial pdfs in one single PDF"""
@@ -111,7 +113,7 @@ def parse_args():
                                         of an archival resource hosted on gallica.bnf.fr.""")
     parser.add_argument("ark", type=str,
                         help="""The Archival Resource Key of the resource to download.
-                        Can be a Gallica URL (https://gallica.bnf.fr/ark:/12148/bpt6k9764647w) 
+                        Can be a Gallica URL (https://gallica.bnf.fr/ark:/12148/bpt6k9764647w)
                         or an ARK URI (ark:/12148/bpt6k9764647w)""")
     parser.add_argument("-s", "--start", type=non_negative_int, default=0,
                         help="Index of the first view to download (starts at 1).")
