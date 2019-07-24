@@ -18,10 +18,10 @@ logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 DEFAULT_NUM_TRIALS = 5
 
-def nnint(value):
+def non_negative_int(value):
     """ Non negative integer"""
     ivalue = int(value)
-    if ivalue <= 0:
+    if ivalue < 0:
         raise argparse.ArgumentTypeError(
             "Parameter must be a non negative integer, not %d" % value)
     return ivalue
@@ -112,16 +112,16 @@ def main():
                         help="""The Archival Resource Key of the resource to download.
                         Can be a Gallica URL (https://gallica.bnf.fr/ark:/12148/bpt6k9764647w) 
                         or an ARK URI (ark:/12148/bpt6k9764647w)""")
-    parser.add_argument("-s", "--start", type=nnint, default=0,
+    parser.add_argument("-s", "--start", type=non_negative_int, default=0,
                         help="Index of the first view to download (starts at 1).")
-    parser.add_argument("-e", "--end", type=nnint, default=0,
+    parser.add_argument("-e", "--end", type=non_negative_int, default=0,
                         help="""Index of the last view to download.
                             Default value: the total number of views of this resource.""")
-    parser.add_argument("--blocksize", type=nnint, default=0,
+    parser.add_argument("--blocksize", type=non_negative_int, default=0,
                         help="""If defined, the resource will be downloaded
                             in blocks of --blocksize views.
                             A value of 100 seems to minimize timeouts""")
-    parser.add_argument("--trials", type=nnint, default=DEFAULT_NUM_TRIALS,
+    parser.add_argument("--trials", type=non_negative_int, default=DEFAULT_NUM_TRIALS,
                         help="""If defined, the resource will be downloaded
                             in blocks of --blocksize views.""")
     parser.add_argument("outputfile", type=str,
@@ -130,7 +130,7 @@ def main():
 
     resource = Resource(pargs.ark)
 
-    if pargs.start < pargs.end:
+    if pargs.end < pargs.start and pargs.end:
         logging.error("Parameter end cannot be smaller than start")
         parser.print_help(sys.stderr)
         sys.exit(1)
