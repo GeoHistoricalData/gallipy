@@ -3,6 +3,7 @@
 import bibtexparser, argparse
 import getpdf, logging
 import os.path
+from gallipy import Resource
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -22,10 +23,11 @@ def download_from_bibdb(bib_database, ark_key):
       vues = [int(s) for s in bib.get('vues').split('--') if s.isdigit()]
     else:
       vues = [1,0]
-    
+
     logging.info("Downloading {} {}: {} [{}]{}".format(entrytype, idx+1, bibkey, ark, ', views {} to {}'.format(vues[0], vues[1]) if bib.get('vues') else ''))
     name = "{}{}.pdf".format(bibkey,'_'+str(vues[0])+'_'+str(vues[1]) if bib.get('vues') else '')
-    getpdf.download_pdf(ark, name, vues[0], vues[1])
+    resource = Resource(ark)
+    getpdf.download_pdf(resource, vues[0], vues[1], 100, 5, name)
 
 if __name__ == "__main__":
     try:
