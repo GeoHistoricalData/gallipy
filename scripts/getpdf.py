@@ -13,22 +13,16 @@ import logging
 import os
 from collections import namedtuple
 from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter, PageRange
-from gallipy import Resource
+from gallipy import Resource, monadic
 
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 DEFAULT_NUM_TRIALS = 5
+DEFAULT_N_VIEWS = 1000 # An arbitrary value of the total number of views in a
+                       # resource if this value can not be retrieved from Gallica
 
 Block = namedtuple("Block", ("start", "n")) # Immutable named tuple
-
-def non_negative_int(value):
-    """ Non negative integer"""
-    ivalue = int(value)
-    if ivalue < 0:
-        raise argparse.ArgumentTypeError(
-            "Parameter must be a non negative integer, not %d" % value)
-    return ivalue
 
 def download_pdf(resource, start, end, blocksize, trials, output_path):
     """ Download the PDF resource in blocks of size blocksize and save it to output_path"""
@@ -44,7 +38,7 @@ def download_pdf(resource, start, end, blocksize, trials, output_path):
                         block.start,
                         block.start+block.n-1,
                         either.value))
-            pdfdata = either.flat_map(lambda v: PdfFileReader(io.BytesIO(v)))
+            pdfdata = PdfFileReader(io.BytesIO(either.value))
             partial = "{}.{}".format(output_path, idx)
             partials.append(partial)
             write_pdfdata(pdfdata, partial)
@@ -55,14 +49,6 @@ def download_pdf(resource, start, end, blocksize, trials, output_path):
     finally:
         for partial in partials:
             os.remove(partial)
-
-def clamp(number, smallest, largest):
-    """ Clamp a number between smallest and largest"""
-    return max(smallest, min(number, largest))
-
-def to_pdffilereader(bdata):
-    """Wrap  any pdf binary data in a PdfFileReader object"""
-    return PdfFileReader(io.BytesIO(bdata))
 
 def generate_blocks(inf, sup, blocksize):
     """Compute the blocks based on the total view range and a block size"""
@@ -107,6 +93,39 @@ def fetch_block(resource, from_view, nviews, trials, reason):
             return fetch_block(resource, from_view, nviews, trials-1, reason)
     return res
 
+# Helpers
+
+def non_negative_int(value):
+    """ Non negative integer"""
+    ivalue = int(value)
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError(
+            "Parameter must be a non negative integer, not %d" % value)
+    return ivalue
+
+def clamp(number, smallest, largest):
+    """ Clamp a number between smallest and largest"""
+    return max(smallest, min(number, largest))
+
+def gallica_nviews(resource):
+    """Ask Gallica"s API to know the total number of views of the resource"""
+    mdata = resource.pagination_sync()
+    def get_from_dict(dict):
+        try:
+            return monadic.Right(int(dict["livre"]["structures"]["nbVueImages"]))
+        except Exception as e:
+            return monadic.Left(e)
+    nviews = mdata.flat_map(get_from_dict)
+    if nviews.is_left:
+        logging.debug("""Could not get the total number of views from Gallica.
+        Value arbitrarily set to %d.""", DEFAULT_N_VIEWS)
+        return DEFAULT_N_VIEWS
+    return nviews.value
+
+def to_pdffilereader(bdata):
+    """Wrap  any pdf binary data in a PdfFileReader object"""
+    return PdfFileReader(io.BytesIO(bdata))
+
 def parse_args():
     """The main : parse arguments and perform some validation before calling download_pdf()"""
     parser = argparse.ArgumentParser(description="""A simple script to download the PDF
@@ -131,23 +150,17 @@ def parse_args():
                         help="The output PDF file.")
     pargs = parser.parse_args()
 
-    resource = Resource(pargs.ark)
-
     if pargs.end < pargs.start and pargs.end:
         logging.error("Parameter end cannot be smaller than start")
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    # Ask Gallica"s API to know the total number of views of the resource
-    mdata = resource.pagination_sync()
-    if mdata.is_left:
-        raise mdata.value
-
-    total_views = int(mdata.value["livre"]["structure"]["nbVueImages"])
-    start = clamp(pargs.start, 1, total_views)
-    end = clamp(pargs.end, start, total_views) if pargs.end else total_views
-    nviews = end-start+1
-    blocksize = pargs.blocksize if pargs.blocksize or pargs.blocksize > nviews else nviews
+    resource = Resource(pargs.ark)
+    nviews = gallica_nviews(resource)
+    start = clamp(pargs.start, 1, nviews)
+    end = clamp(pargs.end, start, nviews) if pargs.end else nviews
+    blocksize = clamp(pargs.blocksize,1,end-start+1)
+    trials = pargs.trials or 1 # Force trial to be at least 1
 
     logging.debug(
         "Downloading views %d to %d %s from resource %s with %d views",
@@ -155,7 +168,7 @@ def parse_args():
         end,
         "by blocks of size %d" % blocksize if blocksize else "",
         resource.arkid,
-        total_views)
+        nviews)
 
     return resource, start, end, blocksize, pargs.trials, pargs.outputfile
 
