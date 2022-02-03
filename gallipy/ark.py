@@ -1,54 +1,44 @@
-from dataclasses import asdict, dataclass
-from collections import defaultdict
+from dataclasses import asdict, dataclass, fields
 from lark import Transformer, Lark
-from lark.exceptions import ParseError,UnexpectedCharacters
+from lark.exceptions import ParseError, UnexpectedCharacters
 
-class _ArkTransformer(Transformer):
-    def httpscheme(self, tokens) -> tuple:
-        return "httpscheme", tokens[-1].value
+
+class ArkTransformer(Transformer):
+    def _last(self, tokens):
+        return tokens[-1].value
+
+    def scheme(self, tokens) -> tuple:
+        return "scheme", self._last(tokens)
 
     def authority(self, tokens) -> tuple:
-        return "authority", tokens[-1].value
+        return "authority", self._last(tokens)
 
     def naan(self, tokens) -> tuple:
-        return "naan", tokens[-1].value
-    
+        return "naan", self._last(tokens)
+
     def name(self, tokens) -> tuple:
-        return "name", tokens[-1].value
+        return "name", self._last(tokens)
 
     def qualifier(self, tokens) -> tuple:
-        return "qualifier", tokens[-1].value
-    
-    def ark(self, tokens) -> dict:
-        filtered = [t for t in tokens if t]
-        return dict(filtered)
+        return "qualifier", self._last(tokens)
 
- 
+    def ark(self, tokens) -> dict:
+        print(tokens)
+        return dict(t for t in tokens if t)
+
+
 @dataclass(frozen=True)
 class Ark:
-    """An ARK ID (long or short) or an ARK URL.
-    To create an Ark object from its string representation, use `Ark.parse("...")`.
-    
+    """
     Example of valid ARKs:
     - https://gallica.bnf.fr/ark:/12148/cb34431794k/date [ARK URL with qualifier]
     - ark:/12148/cb34431794k [long ARK ID]
     - 12148/cb34431794k [long ARK ID]
     - cb34431794k [short ARK ID]
-
-    Raises:
-        ParseError: If a 
-
-    Returns:
-        Ark: A new ARK object.
     """
-    name: str # <name> is the only mandatory part of an ARK
-    httpscheme: str=None
-    authority: str=None
-    naan: str=None
-    qualifier: str=None
-       
-    __ebnf = """
-    ark: [[[[httpscheme _COLON _SLASH _SLASH] authority _SLASH] _ARK_NAMESPACE _COLON _SLASH] naan _SLASH] name [_SLASH qualifier]
+
+    EBNF = """
+    ark: [[[[scheme _COLON _SLASH _SLASH] authority _SLASH] _ARK_NAMESPACE _COLON _SLASH] naan _SLASH] name [_SLASH qualifier]
     authority: ARK_PART
     naan: ARK_PART
     name: ARK_PART
@@ -56,80 +46,106 @@ class Ark:
     _SLASH: "/"
     _COLON: ":"
     _ARK_NAMESPACE: "ark"i
-    httpscheme: HTTP_OR_HTTPS
-    HTTP_OR_HTTPS: /http[s]?/i
+    scheme: SCHEMERULE
+    SCHEMERULE: /http[s]?/i
     ARK_PART: /[^@:\\/#\\[\\]\\?]+/
     """
-    __transformer = _ArkTransformer()
-    __parser = Lark(__ebnf, start='ark')
+
+    _parser = Lark(EBNF, start="ark")
+    _parser_transformer = ArkTransformer()
+
+    scheme: str
+    name: str  # name is mandatory
+    authority: str
+    naan: str
+    qualifier: str
+
+    def __init__(self, ark, **parts) -> None:
+        fnames = [n.name for n in fields(self.__class__)]
+        builder = dict.fromkeys(fnames)
+
+        if isinstance(ark, Ark):
+            builder.update(asdict(ark))
+
+        elif isinstance(ark, str):
+            parsed = self._parse_part(ark)
+            builder.update(parsed)
+
+        else:
+            raise ValueError("Parameter ark must be an Ark object or a string")
+
+        builder.update(parts)
+
+        # Sanitize fields
+        builder = {k: v or None for k, v in builder.items()}
+
+        # Sanity checks before assignment
+        assert all(
+            [
+                builder["name"],  # Name is mandatory
+                all(" " not in v for v in filter(None, builder.values())),
+            ]
+        )
+
+        if builder["authority"] and not builder["scheme"]:
+            builder["scheme"] = "http"
+
+        for name, value in builder.items():
+            object.__setattr__(self, name, value)
+
+    def __post_init__(self):
+        # Verify one last time that the Ark is valid
+        if not self.is_valid():
+            raise ValueError(self)
 
     def short(self) -> str:
         """ Returns the short version of this Ark"""
-        return Ark(self.name)
+        return self.__class__(self.name)
 
-    def is_arkurl(self) -> bool:
-        """Is this Ark of the form [scheme://]<authority>/ark:/... ?"""
-        return bool(self.authority)
+    def arkid(self):
+        parts = asdict(self)
+        parts = {k: v for k, v in parts.items() if k in ["naan", "qualifier"]}
+        return self.__class__(self.name, **parts)
+
+    def is_url(self) -> bool:
+        """True if fields <authority> is set"""
+        return self.authority
 
     def is_arkid(self) -> bool:
-        """Is this Ark of the form [ark:/]<naan>/<name>[/qualifier] or <name> ?"""
-        return not self.is_arkurl()
+        """True if fields <naan> and <name> are set, but this ARK is not an URL."""
+        return self.naan and not self.is_url()
 
     def is_short(self) -> bool:
-        """Does this Ark holds only a `name` ?"""
-        return self.is_arkid() and not self.naan
+        """True is only field <name> is set."""
+        return not (self.naan or self.is_url())
 
     def is_valid(self) -> bool:
         """An Ark is valid if it matches the accepted parsed formats."""
-        authority_must_with_naan = bool(self.authority) and not bool(self.naan)
-        scheme_must_with_authority = bool(self.httpscheme) and not bool(self.authority)
-        return authority_must_with_naan and scheme_must_with_authority
-        
-    def __repr__(self) -> str:
-        """Display this Ark as a simple string"""
-        if self.is_short():
-            return self.name
-        
-        ark = f"ark:/{self.naan}/{self.name}"
-        if self.qualifier:
-            ark = f"{ark}/{self.qualifier}"
-        
-        if self.is_arkurl():
-            scheme = f"{self.httpscheme}:/" if self.httpscheme else ""
-            ark = f"{scheme}/{self.authority}/{ark}"
-        
-        return ark
- 
-    @classmethod
-    def parse(cls, ark_str:str) -> "Ark":
-        """Parse an Ark object from its string representation.
-
-        Accepted formats are: 
-        - ARK URL: [<http_scheme>://]<authority>/ark:/<naan>/<name>[/<qualifier>]
-        - Long ARK ID: [ark:/]<naan>/<name>[/<qualifier>]
-        - Short ARK ID: <name>
-
-        Args:
-            ark_str (str): The string representation of an ARK ID or URL.
-
-        Returns:
-            Ark: The Ark object parsed from `ark_str`.
-            
-        Raises:
-            ParseError: If the ARK string cannot be parsed.
-        """
         try:
-            tree = cls.__parser.parse(ark_str)
-        except (ParseError, UnexpectedCharacters) as err:
-            message = f"Failed to parse `{ark_str}`."
-            message += "\nAccepted formats are:"
-            message += "\n- Full ARK URL -> http[s]://<authority>/<naan>/<name>[/<qualifier>]"
-            message += "\n- Long ARK ID -> [ark:/]<naan>/<name>[/<qualifier>]"
-            message += "\n- Short ARK ID -> <name>"
-            message += f"\nDetails:\n {err}"
-            raise ParseError(message) from err
-        ark_dict = cls.__transformer.transform(tree)
-        return cls(**ark_dict)
+            ark_str = repr(self)
+            return bool(self._parse_part(ark_str))
+        except ParseError:
+            return False
+
+    def __repr__(self) -> str:
+        fields = [self.authority, self.naan, self.name, self.qualifier]
+
+        if self.naan:
+            fields[1] = "ark:/%s" % self.naan
+
+        if self.is_url():
+            fields.insert(0, "%s:/" % self.scheme)
+
+        return "/".join(filter(None, fields))
+
+    @classmethod
+    def _parse_part(cls, ark_string):
+        # try:
+        tree = cls._parser.parse(ark_string)
+        # except (ParseError, UnexpectedCharacters) as err:
+        # raise ParseError("...") from err
+        return cls._parser_transformer.transform(tree)
+
 
 if __name__ == "__main__":
     ark_str = "ark:/12148/cb34431794k/date"
