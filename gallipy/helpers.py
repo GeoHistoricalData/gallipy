@@ -1,6 +1,9 @@
 import requests
 
 
+def drop_none(iterable): return filter(None, iterable)
+
+
 def content_or_fail(response, f):
     print(response.url)
     if response.status_code != 200:

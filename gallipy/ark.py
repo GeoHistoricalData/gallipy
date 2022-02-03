@@ -1,31 +1,17 @@
 from dataclasses import asdict, dataclass, fields
 from lark import Transformer, Lark
+from .helpers import drop_none
 from lark.exceptions import ParseError, UnexpectedCharacters
 
 
 class ArkTransformer(Transformer):
-    def _last(self, tokens):
-        return tokens[-1].value
-
-    def scheme(self, tokens) -> tuple:
-        return "scheme", self._last(tokens)
-
-    def authority(self, tokens) -> tuple:
-        return "authority", self._last(tokens)
-
-    def naan(self, tokens) -> tuple:
-        return "naan", self._last(tokens)
-
-    def name(self, tokens) -> tuple:
-        return "name", self._last(tokens)
-
-    def qualifier(self, tokens) -> tuple:
-        return "qualifier", self._last(tokens)
-
-    def ark(self, tokens) -> dict:
-        print(tokens)
-        return dict(t for t in tokens if t)
-
+    def scheme(self, tokens) -> tuple: return "scheme", self._value(tokens)
+    def authority(self, tokens) -> tuple: return "authority", self._value(tokens)
+    def naan(self, tokens) -> tuple: return "naan", self._value(tokens)
+    def name(self, tokens) -> tuple: return "name", self._value(tokens)
+    def qualifier(self, tokens) -> tuple: return "qualifier", self._value(tokens)
+    def ark(self, tokens) -> dict: return dict(t for t in tokens if t)
+    def _value(tokens): return tokens[-1].value
 
 @dataclass(frozen=True)
 class Ark:
@@ -37,6 +23,17 @@ class Ark:
     - cb34431794k [short ARK ID]
     """
 
+    # ~~~
+    # Fields
+    scheme: str
+    name: str # name is mandatory
+    authority: str
+    naan: str
+    qualifier: str
+    # ~~~
+
+    # Extended Backus-Naur form of an Ark, used by the Lark parser 
+    # to extract the Ark components from a string representation.
     EBNF = """
     ark: [[[[scheme _COLON _SLASH _SLASH] authority _SLASH] _ARK_NAMESPACE _COLON _SLASH] naan _SLASH] name [_SLASH qualifier]
     authority: ARK_PART
@@ -50,80 +47,91 @@ class Ark:
     SCHEMERULE: /http[s]?/i
     ARK_PART: /[^@:\\/#\\[\\]\\?]+/
     """
-
+    
     _parser = Lark(EBNF, start="ark")
-    _parser_transformer = ArkTransformer()
+    _transformer = ArkTransformer()
 
-    scheme: str
-    name: str  # name is mandatory
-    authority: str
-    naan: str
-    qualifier: str
 
-    def __init__(self, ark, **parts) -> None:
-        fnames = [n.name for n in fields(self.__class__)]
-        builder = dict.fromkeys(fnames)
+    def __init__(self, ark, default_scheme="http", **components) -> None:
+        fields_names = [f.name for f in fields(type(self))]
+        fields_dict = dict.fromkeys(fields_names)
 
+        # An ark can be created in three ways:
+        # - from its components passed separately in parameters
+        # - from a string representation
+        # - from an existing Ark object
+        # In the last 2 cases, the components of the ark given in parameter
+        #  can be rewritten partially or totally using keyword arguments.
         if isinstance(ark, Ark):
-            builder.update(asdict(ark))
-
+            fields_dict.update(asdict(ark))
         elif isinstance(ark, str):
-            parsed = self._parse_part(ark)
-            builder.update(parsed)
-
+            fields_dict.update(self._parse(ark))
         else:
-            raise ValueError("Parameter ark must be an Ark object or a string")
+            raise ValueError("`ark` must be provided either as an Ark object or a string.")
 
-        builder.update(parts)
+        # Fields values are replaced with the additional components 
+        # passed to the constructor as keyword arguments
+        fields_dict.update(components)
 
-        # Sanitize fields
-        builder = {k: v or None for k, v in builder.items()}
+        # Dispose of empty field values
+        fields_dict = {k: v or None for k, v in fields_dict.items()}
 
-        # Sanity checks before assignment
+        # Sanity checks before assignment:
+        # - Name is mandatory
+        # - Whitespaces are not allowed
         assert all(
             [
-                builder["name"],  # Name is mandatory
-                all(" " not in v for v in filter(None, builder.values())),
+                fields_dict["name"],
+                all(" " not in v for v in drop_none(fields_dict.values())),
             ]
         )
 
-        if builder["authority"] and not builder["scheme"]:
-            builder["scheme"] = "http"
+        if fields_dict["authority"] and not fields_dict["scheme"]:
+            fields_dict["scheme"] = default_scheme
 
-        for name, value in builder.items():
+        for name, value in fields_dict.items():
             object.__setattr__(self, name, value)
 
     def __post_init__(self):
-        # Verify one last time that the Ark is valid
+        """Once all components have been set, verify that this Ark is valid 
+
+        Raises:
+            ValueError: if self is not a valid Ark as defined in Ark.is_valid()
+        """
         if not self.is_valid():
             raise ValueError(self)
 
     def short(self) -> str:
-        """ Returns the short version of this Ark"""
-        return self.__class__(self.name)
+        """Returns the short version of this Ark"""
+        return type(self)(self.name)
 
     def arkid(self):
-        parts = asdict(self)
-        parts = {k: v for k, v in parts.items() if k in ["naan", "qualifier"]}
-        return self.__class__(self.name, **parts)
+        """Returns the long version of this Ark.
+        If this is a short Ark, will return the short representation anyway."""
+        components = asdict(self)
+        components = {k: v for k, v in components.items() if k in ["naan", "qualifier"]}
+        return type(self)(self.name, **components)
 
     def is_url(self) -> bool:
-        """True if fields <authority> is set"""
+        """Returns True if this Ark is a full URL, i.e. if the field `authority` is set."""
         return self.authority
 
     def is_arkid(self) -> bool:
-        """True if fields <naan> and <name> are set, but this ARK is not an URL."""
+        """Returns True if this ark is a long Ark but not an URL, i.e. if the fields `naan` is set but not `authority`."""
         return self.naan and not self.is_url()
 
     def is_short(self) -> bool:
-        """True is only field <name> is set."""
-        return not (self.naan or self.is_url())
+        """Returns True if this ark is a short Ark, i.e. if there is no `naan`."""
+        return not self.naan and not self.is_url()
 
     def is_valid(self) -> bool:
-        """An Ark is valid if it matches the accepted parsed formats."""
+        """An Ark is valid if it matches one of the accepted parsed formats, i.e.: 
+        - a short Ark: name[/qualifier]
+        - a long Ark: [ark:/]naan/name[/qualifier]
+        - a full URL: [scheme://]authority/ark:/naan/name[/qualifier]
+        """
         try:
-            ark_str = repr(self)
-            return bool(self._parse_part(ark_str))
+            return any(self._parse(repr(self)))
         except ParseError:
             return False
 
@@ -136,23 +144,17 @@ class Ark:
         if self.is_url():
             fields.insert(0, "%s:/" % self.scheme)
 
-        return "/".join(filter(None, fields))
+        return "/".join(drop_none(fields))
 
     @classmethod
-    def _parse_part(cls, ark_string):
-        # try:
+    def _parse(cls, ark_string: str) -> dict[str]:
+        """Parse an Ark represented as a string into a dictionary of components.
+
+        Args:
+            ark_string (str): the ark string to parse
+
+        Returns:
+            dict[str]: the dictionary of components extracted from the input ark string
+        """
         tree = cls._parser.parse(ark_string)
-        # except (ParseError, UnexpectedCharacters) as err:
-        # raise ParseError("...") from err
-        return cls._parser_transformer.transform(tree)
-
-
-if __name__ == "__main__":
-    ark_str = "ark:/12148/cb34431794k/date"
-    ark = Ark.parse(ark_str)
-    assert str(ark) == ark_str
-    assert ark.is_arkid()
-    assert not ark.is_short()
-    assert not ark.is_arkurl()
-    assert str(ark.short()) == "cb34431794k"
-    print(ark)
+        return cls._transformer.transform(tree)
