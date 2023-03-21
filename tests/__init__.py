@@ -1,3 +1,3 @@
 import sys
 
-sys.path.append('gallipy/')
+sys.path.append("gallipy/")

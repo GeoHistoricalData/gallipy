@@ -2,15 +2,15 @@ import datetime
 from ark import Ark
 
 issues = {
-    'metadata': {
-        'listType': 'years',
-        'parentArk': Ark("cb32707911p", naan="12148", qualifier="date"),
-        'totalIssues': 157,
-        'uc3': 'no'
-        },
-    'year_list': [1899, 1900, 1901, 1902],
-    'issue_list': []
-    }
+    "metadata": {
+        "listType": "years",
+        "parentArk": Ark("cb32707911p", naan="12148", qualifier="date"),
+        "totalIssues": 157,
+        "uc3": "no",
+    },
+    "year_list": [1899, 1900, 1901, 1902],
+    "issue_list": [],
+}
 
 issues_1902 = {
     "metadata": {
@@ -20,65 +20,218 @@ issues_1902 = {
     },
     "year_list": [],
     "issue_list": [
-        {"metadata": {"ark": Ark("bpt6k45421002"), "dayOfYear": 6}, "text": "06 janvier 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542101g"), "dayOfYear": 12}, "text": "12 janvier 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542102w"), "dayOfYear": 19}, "text": "19 janvier 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421039"), "dayOfYear": 26}, "text": "26 janvier 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542104q"), "dayOfYear": 33}, "text": "02 février 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421054"), "dayOfYear": 40}, "text": "09 février 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542106j"), "dayOfYear": 47}, "text": "16 février 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542107z"), "dayOfYear": 54}, "text": "23 février 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542108c"), "dayOfYear": 61}, "text": "02 mars 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542109s"), "dayOfYear": 68}, "text": "09 mars 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542110f"), "dayOfYear": 75}, "text": "16 mars 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542111v"), "dayOfYear": 82}, "text": "23 mars 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421128"), "dayOfYear": 89}, "text": "30 mars 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542113p"), "dayOfYear": 96}, "text": "06 avril 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421143"), "dayOfYear": 103}, "text": "13 avril 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542115h"), "dayOfYear": 110}, "text": "20 avril 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542116x"), "dayOfYear": 117}, "text": "27 avril 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542117b"), "dayOfYear": 124}, "text": "04 mai 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542118r"), "dayOfYear": 132}, "text": "12 mai 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421195"), "dayOfYear": 138}, "text": "18 mai 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542120t"), "dayOfYear": 145}, "text": "25 mai 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421217"), "dayOfYear": 152}, "text": "01 juin 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542122n"), "dayOfYear": 159}, "text": "08 juin 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421232"), "dayOfYear": 166}, "text": "15 juin 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542124g"), "dayOfYear": 173}, "text": "22 juin 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542125w"), "dayOfYear": 180}, "text": "29 juin 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421269"), "dayOfYear": 187}, "text": "06 juillet 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542127q"), "dayOfYear": 194}, "text": "13 juillet 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421284"), "dayOfYear": 201}, "text": "20 juillet 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542129j"), "dayOfYear": 208}, "text": "27 juillet 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421306"), "dayOfYear": 215}, "text": "03 août 1902"},
-        {"metadata": {"ark": Ark("bpt6k4542131m"), "dayOfYear": 222}, "text": "10 août 1902"},
-        {"metadata": {"ark": Ark("bpt6k45421321"), "dayOfYear": 229}, "text": "17 août 1902"},
+        {
+            "metadata": {"ark": Ark("bpt6k45421002"), "dayOfYear": 6},
+            "text": "06 janvier 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542101g"), "dayOfYear": 12},
+            "text": "12 janvier 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542102w"), "dayOfYear": 19},
+            "text": "19 janvier 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421039"), "dayOfYear": 26},
+            "text": "26 janvier 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542104q"), "dayOfYear": 33},
+            "text": "02 février 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421054"), "dayOfYear": 40},
+            "text": "09 février 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542106j"), "dayOfYear": 47},
+            "text": "16 février 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542107z"), "dayOfYear": 54},
+            "text": "23 février 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542108c"), "dayOfYear": 61},
+            "text": "02 mars 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542109s"), "dayOfYear": 68},
+            "text": "09 mars 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542110f"), "dayOfYear": 75},
+            "text": "16 mars 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542111v"), "dayOfYear": 82},
+            "text": "23 mars 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421128"), "dayOfYear": 89},
+            "text": "30 mars 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542113p"), "dayOfYear": 96},
+            "text": "06 avril 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421143"), "dayOfYear": 103},
+            "text": "13 avril 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542115h"), "dayOfYear": 110},
+            "text": "20 avril 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542116x"), "dayOfYear": 117},
+            "text": "27 avril 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542117b"), "dayOfYear": 124},
+            "text": "04 mai 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542118r"), "dayOfYear": 132},
+            "text": "12 mai 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421195"), "dayOfYear": 138},
+            "text": "18 mai 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542120t"), "dayOfYear": 145},
+            "text": "25 mai 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421217"), "dayOfYear": 152},
+            "text": "01 juin 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542122n"), "dayOfYear": 159},
+            "text": "08 juin 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421232"), "dayOfYear": 166},
+            "text": "15 juin 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542124g"), "dayOfYear": 173},
+            "text": "22 juin 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542125w"), "dayOfYear": 180},
+            "text": "29 juin 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421269"), "dayOfYear": 187},
+            "text": "06 juillet 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542127q"), "dayOfYear": 194},
+            "text": "13 juillet 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421284"), "dayOfYear": 201},
+            "text": "20 juillet 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542129j"), "dayOfYear": 208},
+            "text": "27 juillet 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421306"), "dayOfYear": 215},
+            "text": "03 août 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k4542131m"), "dayOfYear": 222},
+            "text": "10 août 1902",
+        },
+        {
+            "metadata": {"ark": Ark("bpt6k45421321"), "dayOfYear": 229},
+            "text": "17 août 1902",
+        },
     ],
 }
 
 oairecord = {
-    'visibility_rights': 'all', 
-    'title': 'La plage d\'Etretat par l\'auteur de "Monsieur X et Mme ***"', 
-    'typedoc': 'monographie', 
-    'provenance': 'bnf.fr', 
-    'dewey': 8, 
-    'sdewey': 84,
-    'nqamoyen': 92.57, 
-    'date': [1868, 1868], 
-    'mode_indexation': 'text', 
-    'source': 'Bibliothèque nationale de France, département Littérature et art, Y2-59413', 
-    'first_indexation_date': datetime.datetime(2010, 5, 3, 0, 0), 
-    'metadata': {
-        'countResults': 1, 
-        'resultType': 'CVOAIRecordSearchService', 
-        'searchTime': ''}
-    }
+    "visibility_rights": "all",
+    "title": "La plage d'Etretat par l'auteur de \"Monsieur X et Mme ***\"",
+    "typedoc": "monographie",
+    "provenance": "bnf.fr",
+    "dewey": 8,
+    "sdewey": 84,
+    "nqamoyen": 92.57,
+    "date": [1868, 1868],
+    "mode_indexation": "text",
+    "source": "Bibliothèque nationale de France, département Littérature et art, Y2-59413",
+    "first_indexation_date": datetime.datetime(2010, 5, 3, 0, 0),
+    "metadata": {
+        "countResults": 1,
+        "resultType": "CVOAIRecordSearchService",
+        "searchTime": "",
+    },
+}
 
-pagination = {'structure': {'firstDisplayedPage': 1, 'hasToc': True, 'TocLocation': 0, 'hasContent': True, 'idUPN': True, 'nbVueImages': 1}, 'page_list': [{'numero': True, 'ordre': 1, 'pagination_type': True, 'image_width': 15316, 'image_height': 9998}]}
+pagination = {
+    "structure": {
+        "firstDisplayedPage": 1,
+        "hasToc": True,
+        "TocLocation": 0,
+        "hasContent": True,
+        "idUPN": True,
+        "nbVueImages": 1,
+    },
+    "page_list": [
+        {
+            "numero": True,
+            "ordre": 1,
+            "pagination_type": True,
+            "image_width": 15316,
+            "image_height": 9998,
+        }
+    ],
+}
 
 
-contentsearch_onepage = {'metadata': {'countResults': 1}, 'items': [{'page': 5, 'page_height': 2488, 'page_width': 1430, 'altoid': {'countResults': 1, 'altoidstring': [{'PAG_00000005_ST000039': {'height': 35, 'highlightStyle': 0, 'hpos': 334, 'vpos': 573, 'width': 176}}]}}], 'query': 'intimider'}
-contentsearch_allpages = {'metadata': {'countResults': 1}, 'items': [{'page': 5, 'text': ['Quelques membres plus experts ne se laissèrent point intimider par ces menaces chimériques']}], 'query': 'intimider'}
+contentsearch_onepage = {
+    "metadata": {"countResults": 1},
+    "items": [
+        {
+            "page": 5,
+            "page_height": 2488,
+            "page_width": 1430,
+            "altoid": {
+                "countResults": 1,
+                "altoidstring": [
+                    {
+                        "PAG_00000005_ST000039": {
+                            "height": 35,
+                            "highlightStyle": 0,
+                            "hpos": 334,
+                            "vpos": 573,
+                            "width": 176,
+                        }
+                    }
+                ],
+            },
+        }
+    ],
+    "query": "intimider",
+}
+contentsearch_allpages = {
+    "metadata": {"countResults": 1},
+    "items": [
+        {
+            "page": 5,
+            "text": [
+                "Quelques membres plus experts ne se laissèrent point intimider par ces menaces chimériques"
+            ],
+        }
+    ],
+    "query": "intimider",
+}
 
 
 toc = """<TEI.2 xmlns:xlink="http://www.w3.org/TR/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://bibnum.bnf.fr/ns/tdmNum.xsd">
