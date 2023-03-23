@@ -1,7 +1,7 @@
+from typing import Optional, Union
 from pydantic import validator
 from pydantic import BaseModel
 from lark import Transformer, Lark
-from collections import defaultdict
 
 
 class ArkTransformer(Transformer):
@@ -36,7 +36,7 @@ class ArkTransformer(Transformer):
 class ArkParser:
     # Lark grammar of ARK identifiers
     GRAMMAR = """
-    ark: [[[scheme _SEP~2] nma _SEP "ark"i _SEP] naan _SEP] name [_SEP qualifier]*
+    ark: [[scheme _SEP~2 ":"] nma _SEP] ["ark"i ":" _SEP] naan _SEP name [_SEP qualifier]*
     scheme: /https?/
     nma: PART
     naan: PART
@@ -44,7 +44,6 @@ class ArkParser:
     qualifier: PART
     PART: /[^@:\\/#\\[\\]\\?]+/i
     _SEP: "/"
-    %ignore ":"
     """
 
     _parser = Lark(GRAMMAR, start="ark")
@@ -54,40 +53,39 @@ class ArkParser:
     def parse(ark_string):
         tree = ArkParser._parser.parse(ark_string)
         elements = ArkParser._transformer.transform(tree)
-        print(elements)
         return Ark(**elements)
 
 
 class Ark(BaseModel, frozen=True):
 
-    nma: str = None
-    naan: str = None
-    name: str
-    qualifiers: list[str] = []
     scheme: str = "http"
+    nma: Optional[str]
+    naan: str
+    name: str
+    qualifiers: Union[str, list[str]] = []
 
     _parser: ArkParser = ArkParser()
 
-    @validator("name")
-    def name_is_mandatory(cls, name):
-        if not name:
-            raise ValueError("The element `name` is mandatory")
-        return name
+    @validator("qualifiers")
+    def qualifiers_to_list(cls, qualifiers):
+        print(qualifiers)
+        return qualifiers if isinstance(qualifiers, list) else [qualifiers]
 
     @classmethod
     def from_string(cls, ark_string: str) -> "Ark":
         sanitized_arkstring = ark_string.strip().lower()
         return cls._parser.parse(sanitized_arkstring)
 
-    def is_uri(self):
+    def is_uri(self) -> bool:
         return self.nma is not None
 
+    def short(self) -> str:
+        parts = ["ark:", self.naan, self.name] + self.qualifiers
+        return "/".join(parts)
+
     def __str__(self) -> str:
-        ark = "ark:" + "/".join([self.naan, self.name] + self.qualifiers)
+        ark = self.short()
         if self.is_uri():
             domain = f"{self.scheme}://{self.nma}"
             return f"{domain}/{ark}"
         return ark
-
-
-print(Ark.from_string("http://www.biblio-pour-internautes.fr/ark:/123/456"))

@@ -28,38 +28,43 @@ def test_invalid_parsing(invalid_ark_string: str):
 
 
 @pytest.mark.parametrize(
-    "ark_string", ["http://example.org/ark:/13030/654xz321/s3/f8.05v.tiff",
-                   "http://www.catalogue.fr/ark:/123/456",
-                   "http://www.biblio-pour-internautes.fr/ark:/123/456",
-                   "http://collections.banq.qc.ca/ark:/52327/61248"]
+    "ark",
+    [
+        "http://example.org/ark:/13030/654xz321/s3/f8.05v.tiff",
+        "http://www.catalogue.fr/ark:/123/456",
+        "http://www.biblio-pour-internautes.fr/ark:/123/456",
+        "http://collections.banq.qc.ca/ark:/52327/61248",
+    ],
 )
-def test_parsing_complex_arks(ark_string):
-    Ark.from_string(ark_string)
+def test_parsing_arks(ark):
+    Ark.from_string(ark)
 
 
-# def test_repr():
-#     ark = Ark("name", naan="naan", qualifier="qualifier")
-#     assert "ark:/naan/name/qualifier" == str(ark)
+def test_to_string():
+    short_ark = Ark(name="name", naan="naan", qualifiers="qualifier")
+    assert "ark:/naan/name/qualifier" == str(short_ark)
+    long_ark = Ark(nma="nma", name="name", naan="naan", qualifiers="qualifier")
+    assert "http://nma/ark:/naan/name/qualifier" == str(long_ark)
 
 
-# def test_equality():
-#     ark = Ark("name", naan="naan", qualifier="qualifier")
-#     ark2 = Ark("name", naan="naan", qualifier="qualifier")
-#     assert ark == ark2
-#     assert Ark.parse("ark:/12148/cb32707911p/date") == Ark.parse(
-#         "ark:/12148/cb32707911p/date"
-#     )
+def test_equality():
+    ark = Ark(name="name", naan="naan", qualifiers="qualifier")
+    dup = Ark(name="name", naan="naan", qualifiers="qualifier")
+    assert ark == dup
+    ark = Ark.from_string("ark:/12148/cb32707911p/date")
+    dup = Ark.from_string("ark:/12148/cb32707911p/date")
+    assert ark == dup
 
 
-# def test_only_name_is_mandatory():
-#     Ark("name")
-#     Ark.parse("name")
+def test_only_name_is_mandatory():
+    Ark(naan="naan", name="name")
+    Ark.from_string("naan/name")
 
 
-# def test_ark_is_immutable():
-#     ark = Ark("name")
-#     with pytest.raises(dataclasses.FrozenInstanceError):
-#         ark.name = "something else"
+def test_ark_is_immutable():
+    ark = Ark(naan="naan", name="name")
+    with pytest.raises(TypeError):
+        ark.name = "something else"
 
 
 # def test_copy_ark():
