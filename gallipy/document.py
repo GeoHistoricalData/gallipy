@@ -15,6 +15,67 @@
 # )
 
 
+from typing import Any, Union
+from bs4 import BeautifulSoup
+import httpx
+from pydantic import BaseModel, validator
+
+from ark import Ark
+
+ENDPOINT_ISSUES = "https://gallica.bnf.fr/services/Issues"
+ENDPOINT_OAIRecord = "https://gallica.bnf.fr/services/OAIRecord"
+ENDPOINT_Pagination = "https://gallica.bnf.fr/services/Pagination"
+
+def copyparse(ark: Union[str, Ark]) -> Ark:
+    if isinstance(ark, Ark):
+        return ark.copy()
+    elif isinstance(ark, str):
+        return Ark.from_string(ark)
+    else:
+        raise TypeError(f"{ark} is not an ARK.")
+
+
+class Service(BaseModel):
+    ark: Ark
+
+    @validator("ark", pre=True)
+    def init_ark(cls, ark: Union[str, Ark]):
+        return copyparse(ark)
+
+    def fetch_xml(self, url, params, client: httpx.Client):
+        r = client.get(url, params=params)
+        r.raise_for_status()
+        return BeautifulSoup(r.text, features="xml")
+
+class Issues(Service):
+
+    @validator("ark", pre=True)
+    def init_ark(cls, ark: Union[str, Ark]):
+        ark = super().init_ark(ark)
+        if not ark.identifier().endswith("date"):
+            ark.qualifiers.append("date")
+        return ark
+
+    def get(self, client: httpx.Client, date: int = None):
+        p = {"ark": self.ark, "date": date}
+        return self.fetch_xml(ENDPOINT_ISSUES, p, client)
+
+class OAIRecord(Service):
+    def get(self, client: httpx.Client):
+        p = {"ark": self.ark.name}
+        return self.fetch_xml(ENDPOINT_OAIRecord, p, client)
+
+class Pagination(Service):
+    def get(self, client: httpx.Client):
+        p = {"ark": self.ark.name}
+        return self.fetch_xml(ENDPOINT_Pagination, p, client)
+
+
+with httpx.Client() as c:
+    i = Issues(ark="ark:/12148/cb32798952c").get(c, date=1937)
+    print(i)
+    i = OAIRecord(ark="ark:/12148/cb32798952c").get(c)
+    print(i)
 # @dataclass
 # class Document:
 

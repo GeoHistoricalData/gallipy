@@ -1,15 +1,15 @@
 from typing import Optional, Union
 from pydantic import validator
 from pydantic import BaseModel
-from lark import Transformer, Lark
+from lark import Token, Transformer, Lark
 
 
 class ArkTransformer(Transformer):
     def scheme(self, tokens) -> tuple:
         return "scheme", self._value(tokens)
 
-    def nma(self, tokens) -> tuple:
-        return "nma", self._value(tokens)
+    def nma(self, tokens: Token) -> tuple:
+        return "nma", "/".join([t.value for t in tokens if t])
 
     def naan(self, tokens) -> tuple:
         return "naan", self._value(tokens)
@@ -36,9 +36,9 @@ class ArkTransformer(Transformer):
 class ArkParser:
     # Lark grammar of ARK identifiers
     GRAMMAR = """
-    ark: [[scheme _SEP~2 ":"] nma _SEP] ["ark"i ":" _SEP] naan _SEP name [_SEP qualifier]*
+    ark: [[scheme ":" _SEP~2] nma] ["ark"i ":" _SEP] naan _SEP name [_SEP qualifier]*
     scheme: /https?/
-    nma: PART
+    nma: [PART _SEP]+
     naan: PART
     name: PART
     qualifier: PART
@@ -58,8 +58,11 @@ class ArkParser:
 
 class Ark(BaseModel, frozen=True):
 
+    # Permalink elements
     scheme: str = "http"
     nma: Optional[str]
+
+    # Ark identifier
     naan: str
     name: str
     qualifiers: Union[str, list[str]] = []
@@ -68,7 +71,6 @@ class Ark(BaseModel, frozen=True):
 
     @validator("qualifiers")
     def qualifiers_to_list(cls, qualifiers):
-        print(qualifiers)
         return qualifiers if isinstance(qualifiers, list) else [qualifiers]
 
     @classmethod
@@ -76,16 +78,16 @@ class Ark(BaseModel, frozen=True):
         sanitized_arkstring = ark_string.strip().lower()
         return cls._parser.parse(sanitized_arkstring)
 
-    def is_uri(self) -> bool:
-        return self.nma is not None
-
-    def short(self) -> str:
-        parts = ["ark:", self.naan, self.name] + self.qualifiers
+    def identifier(self, with_qualifiers=True) -> str:
+        parts = ["ark:", self.naan, self.name]
+        if with_qualifiers:
+            parts += self.qualifiers
         return "/".join(parts)
 
+    def permalink(self, with_qualifiers=True) -> str:
+        host = f"{self.scheme}://{self.nma}"
+        identifier = self.identifier(with_qualifiers)
+        return f"{host}/{identifier}"
+
     def __str__(self) -> str:
-        ark = self.short()
-        if self.is_uri():
-            domain = f"{self.scheme}://{self.nma}"
-            return f"{domain}/{ark}"
-        return ark
+        return self.identifier()
