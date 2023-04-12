@@ -56,7 +56,7 @@ class ArkParser:
         return Ark(**elements)
 
 
-class Ark(BaseModel, frozen=True):
+class Ark(BaseModel, frozen=False):
 
     # Permalink elements
     scheme: str = "http"
