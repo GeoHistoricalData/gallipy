@@ -1,14 +1,14 @@
 from enum import Enum
 import io
 from typing import Union
+from PyPDF2 import PdfReader
 from bs4 import BeautifulSoup
 from PIL import Image as PILImage
 import httpx
 from pydantic import BaseModel, validator
 from urllib.parse import urljoin
-from ark import Ark
-
-GALLICA = "https://gallica.bnf.fr"
+from . import Ark
+from .routes import gallica_route_to, gallica_route_to_services
 
 
 class MarkupFormat(Enum):
@@ -17,7 +17,7 @@ class MarkupFormat(Enum):
 
 
 class Service(BaseModel):
-    ark: Ark
+    ark: Union[str, Ark]
 
     @validator("ark", pre=True)
     def init_ark(cls, ark: Union[str, Ark]):
@@ -25,7 +25,7 @@ class Service(BaseModel):
             return Ark.from_string(ark)
         return ark.copy()
 
-    def fetch_document(
+    def fetch(
         self,
         url,
         params,
@@ -33,12 +33,13 @@ class Service(BaseModel):
         format: MarkupFormat = MarkupFormat.HTML,
     ) -> BeautifulSoup:
         r = client.get(url, params=params)
+        print(url)
         r.raise_for_status()
         return BeautifulSoup(r.text, features=format.value)
 
 
 class Issues(Service):
-    _endpoint: str = urljoin(GALLICA, "service/Issues")
+    _endpoint: str = gallica_route_to_services("Issues")
 
     @validator("ark", pre=True)
     def init_ark(cls, ark: Union[str, Ark]):
@@ -50,7 +51,7 @@ class Issues(Service):
 
     def fetch(self, client: httpx.Client, date: int = None) -> BeautifulSoup:
         params = {"ark": self.ark, "date": date}
-        return self.fetch_document(
+        return super().fetch(
             self._endpoint,
             params,
             client,
@@ -59,19 +60,19 @@ class Issues(Service):
 
 
 class OAIRecord(Service):
-    _endpoint: str = urljoin(GALLICA, "service/OAIRecord")
+    _endpoint: str = gallica_route_to_services("OAIRecord")
 
     def fetch(self, client: httpx.Client) -> BeautifulSoup:
         params = {"ark": self.ark.name}
-        return self.fetch_document(self._endpoint, params, client, MarkupFormat.XML)
+        return super().fetch(self._endpoint, params, client, MarkupFormat.XML)
 
 
 class Pagination(Service):
-    _endpoint: str = urljoin(GALLICA, "service/Pagination")
+    _endpoint: str = gallica_route_to_services("Pagination")
 
     def fetch(self, client: httpx.Client) -> BeautifulSoup:
         params = {"ark": self.ark.name}
-        return self.fetch_document(self._endpoint, params, client, MarkupFormat.XML)
+        return super().fetch(self._endpoint, params, client, MarkupFormat.XML)
 
 
 class ImageQualifier(Enum):
@@ -82,15 +83,20 @@ class ImageQualifier(Enum):
 
 
 class Image(Service):
-    def fetch(self, client: httpx.Client, qualifier: ImageQualifier) -> PILImage:
-        url = urljoin(GALLICA, f"{self.ark}/{qualifier}")
+    _endpoint = None
+
+    def model_post_init(self):
+        self._endpoint = gallica_route_to(self.ark, "/")
+
+    def fetch(self, client: httpx.Client, quality: ImageQualifier) -> PILImage:
+        url = urljoin(self._endpoint, quality)
         r = client.get(url)
         r.raise_for_status()
         return PILImage.open(io.BytesIO(r.content))
 
 
 class ContentSearch(Service):
-    _endpoint: str = urljoin(GALLICA, "service/ContentSearch")
+    _endpoint: str = gallica_route_to_services("ContentSearch")
 
     def fetch(
         self,
@@ -106,34 +112,52 @@ class ContentSearch(Service):
             "startResult": startResult,
         }
         params = {k: v for k, v in params.items() if v}
-        return self.fetch_document(self._endpoint, params, client, MarkupFormat.XML)
+        return super().fetch(self._endpoint, params, client, MarkupFormat.XML)
 
 
 class Toc(Service):
-    _endpoint: str = urljoin(GALLICA, "service/Toc")
+    _endpoint: str = gallica_route_to_services("Toc")
 
     def fetch(self, client: httpx.Client) -> BeautifulSoup:
         params = {"ark": self.ark}
-        return self.fetch_document(self._endpoint, params, client, MarkupFormat.XML)
+        return super().fetch(self._endpoint, params, client, MarkupFormat.XML)
 
 
-class Text(Service):
-    def fetch_plain(self, client: httpx.Client) -> str:
-        url = urljoin(GALLICA, f"{self.ark}/texteBrut")
-        r = client.get(url)
+class TexteBrut(Service):
+    _endpoint = None
+
+    def model_post_init(self):
+        self._endpoint = gallica_route_to(self.ark)
+        self._endpoint += ".texteBrut"
+
+    def fetch(self, client: httpx.Client):
+        r = client.get(self._endpoint)
         r.raise_for_status()
         return r.content
 
-    def fetch_ocr(self, client: httpx.Client, deb: int) -> BeautifulSoup:
-        url = urljoin(GALLICA, "RequestDigitalElement")
-        params = {"O": self.ark.name, "E": "ALTO", "Deb": deb}
-        return self.fetch_document(url, params, client, MarkupFormat.XML)
+
+class RequestDigitalElement(Service):
+    _endpoint = None
+
+    def model_post_init(self):
+        self._endpoint = gallica_route_to(self.ark, "/", "RequestDigitalElement")
+
+    def fetch(self, client: httpx.Client, deb: int):
+        params = {"O": self.ark.name, "DEB": deb, "E": "ALTO"}
+        return super().fetch(self._endpoint, params, client, MarkupFormat.XML)
 
 
-with httpx.Client(timeout=10) as c:
-    # i = Issues(ark="ark:/12148/cb32798952c").get(c, date=1937)
-    # print(i)
-    # i = OAIRecord(ark="ark:/12148/cb32798952c").get(c)
-    # print(i)
-    i = Text(ark="12148/bpt6k5619759j").get_ocrtext(c, deb=3)
-    print(i)
+class PDF(Service):
+    _endpoint = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._endpoint = gallica_route_to(self.ark, "/")
+
+    def fetch(self, client: httpx.Client, _from: int, n: int = None):
+        template = "f{a}n{n}.pdf" if n else "f{a}.pdf"
+        url = urljoin(self._endpoint, template.format(a=_from, n=n))
+        print(url)
+        r = client.get(url)
+        r.raise_for_status()
+        return PdfReader(io.BytesIO(r.content))

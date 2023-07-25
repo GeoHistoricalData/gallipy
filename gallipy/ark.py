@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 from pydantic import validator
 from pydantic import BaseModel
 from lark import Token, Transformer, Lark
@@ -57,6 +57,8 @@ class ArkParser:
 
 
 class Ark(BaseModel, frozen=False):
+    class Config:
+        underscore_attrs_are_private = True
 
     # Permalink elements
     scheme: str = "http"
@@ -67,7 +69,7 @@ class Ark(BaseModel, frozen=False):
     name: str
     qualifiers: Union[str, list[str]] = []
 
-    _parser: ArkParser = ArkParser()
+    _parser: ClassVar[ArkParser] = ArkParser()
 
     @validator("qualifiers")
     def qualifiers_to_list(cls, qualifiers):

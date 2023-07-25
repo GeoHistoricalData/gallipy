@@ -1,63 +1,12 @@
-from dataclasses import dataclass
-from .ark import Ark
+from functools import partial
 
-GALLICA = "https://gallica.bnf.fr"
-
-##
-# Document API
-##
+GALLICA: str = "https://gallica.bnf.fr"
+IIIF_ENPOINT: str = GALLICA + "/iiif"
 
 
-def service(verb: str) -> str:
-    return f"{GALLICA}/services/{verb}"
+def gallica_route_to(*path_parts: str):
+    items = [GALLICA] + list(path_parts)
+    return "/".join(str(i) for i in items)
 
 
-issues = service("Issues")
-
-oairecord = service("OAIRecord")
-
-pagination = service("Pagination")
-
-contentsearch = service("ContentSearch")
-
-toc = service("Toc")
-
-requestdigitalelement = f"{GALLICA}/RequestDigitalElement"
-
-
-def image(ark: Ark, page: int, resolution: str) -> str:
-    return f"{GALLICA}/{ark}/f{page}.{resolution}"
-
-
-def textebrut(ark: Ark) -> str:
-    return f"{GALLICA}/{ark}.texteBrut"
-
-
-##
-# IIIF API
-##
-
-iiif = f"{GALLICA}/iiif"
-
-
-def image_requests(
-    ark: Ark, vue: int, region: str, size: str, rotation: int, quality: str, format: str
-) -> str:
-    return f"{iiif}/{ark}/{vue}/{region}/{size}/{rotation}/{quality}.{format}"
-
-
-def image_information(ark: Ark, vue: int) -> str:
-    return f"{iiif}/{ark}/{vue}/info.json"
-
-
-def presentation(ark: Ark) -> str:
-    return f"{iiif}/{ark}/manifest.json"
-
-
-##
-# Search API
-##
-
-sru = f"{GALLICA}/SRU"
-
-categories = service("Categories")
+gallica_route_to_services = partial(gallica_route_to, "services")

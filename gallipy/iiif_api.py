@@ -1,13 +1,11 @@
 import httpx
 import io
-from ark import Ark
+from . import Ark
 from pydantic import BaseModel, Field, validator
 from PIL import Image as PILImage
 from typing import Any, ClassVar, Literal, Union
 from urllib.parse import urljoin
-
-
-GALLICA_IIIF: str = "https://gallica.bnf.fr/iiif"
+from .routes import IIIF_ENPOINT
 
 
 class IIIFResource(BaseModel):
@@ -28,19 +26,19 @@ class IIIFResource(BaseModel):
         return cls(ark=ark)
 
     def manifest(self, client: httpx.Client) -> Any:
-        url = urljoin(GALLICA_IIIF, f"{self.ark}/manifest.json")
+        url = urljoin(IIIF_ENPOINT, f"{self.ark}/manifest.json")
         response = client.get(url)
         response.raise_for_status()
         return response.json()
 
     def info(self, client: httpx.Client) -> Any:
-        url = urljoin(GALLICA_IIIF, f"{self.ark}/info.json")
+        url = urljoin(IIIF_ENPOINT, f"{self.ark}/info.json")
         response = client.get(url)
         response.raise_for_status()
         return response.json()
 
     def image(self, **params) -> "Image":
-        return Image(endpoint=GALLICA_IIIF, identifier=self.ark, **params)
+        return Image(endpoint=IIIF_ENPOINT, identifier=self.ark, **params)
 
 
 class Image(BaseModel):
@@ -48,9 +46,9 @@ class Image(BaseModel):
 
     endpoint: str
     identifier: Union[str, Ark]
-    region: str = Field(regex=r"full|square|(pct:)?\d+,\d+,\d+,\d+", default="full")
-    size: str = Field(regex=r"full|max|\d+,|,\d+|pct:\d+|!?\d+,\d+", default="max")
-    rotation: str = Field(regex=r"!?\d{1,3}", default="0")
+    region: str = Field(pattern=r"full|square|(pct:)?\d+,\d+,\d+,\d+", default="full")
+    size: str = Field(pattern=r"full|max|\d+,|,\d+|pct:\d+|!?\d+,\d+", default="max")
+    rotation: str = Field(pattern=r"!?\d{1,3}", default="0")
     quality: Literal["color", "gray", "bitonal", "default"] = "default"
     format: str = "jpg"
 
@@ -88,11 +86,3 @@ class Image(BaseModel):
         ]
         url = "/".join(parts) + f".{self.format}"
         return url
-
-
-with httpx.Client() as c:
-    i = IIIFResource.from_url(
-        "https://gallica.bnf.fr/iiif/ark:/12148/btv1b90017179/f3/full/750,/30/bitonal.jpg"
-    )
-    im = i.image(quality="gray").fetch(c)
-    im.show()

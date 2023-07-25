@@ -1,15 +1,15 @@
 from gallipy.ark import Ark
-from gallipy.iiif import IIIF
+from gallipy.iiif import IIIFResource
 
 
 def test_imagerequests():
-    iiif = IIIF("ark:/12148/btv1b530532764")
+    iiif = IIIFResource("ark:/12148/btv1b530532764")
     im = iiif.image_requests(1, (800, 10000, 2150, 3000), (430, 600), 90, "native")
     assert im
 
 
 def test_imageinformation():
-    iiif = IIIF("ark:/12148/btv1b530532764")
+    iiif = IIIFResource("ark:/12148/btv1b530532764")
     info = iiif.image_information(1)
     assert (
         info
@@ -18,6 +18,6 @@ def test_imageinformation():
 
 
 def test_presentation():
-    iiif = IIIF("ark:/12148/btv1b530532764")
+    iiif = IIIFResource("ark:/12148/btv1b530532764")
     pres = iiif.presentation()
     assert pres

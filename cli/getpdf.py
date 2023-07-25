@@ -9,10 +9,13 @@ import io
 import argparse
 import sys
 import logging
+import httpx
 import os
 from collections import namedtuple
-from PyPDF2 import PdfFileReader, PdfFileMerger, PdfFileWriter, PageRange
-from gallipy import Resource, monadic
+from PyPDF2 import PdfFileReader, PageRange, PdfMerger, PdfWriter
+
+from gallipy import Ark
+from gallipy import services
 
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
@@ -30,20 +33,19 @@ def download_pdf(resource, start, end, blocksize, trials, output_path):
     try:
         for idx, block in enumerate(generate_blocks(start, end, blocksize)):
             reason = "Download block " + str(block)
-            either = fetch_block(resource, block.start, block.n, trials, reason)
-            if either.is_left:
-                raise Exception(
-                    "Failed to fetch resource {} from view {} to view {}.\nReason: {}".format(
-                        resource.arkid,
-                        block.start,
-                        block.start + block.n - 1,
-                        either.value,
-                    )
-                )
-            pdfdata = PdfFileReader(io.BytesIO(either.value))
+            pdf = fetch_block(resource, block.start, block.n, trials, reason)
+            # if either.is_left:
+            #     raise Exception(
+            #         "Failed to fetch resource {} from view {} to view {}.\nReason: {}".format(
+            #             resource.arkid,
+            #             block.start,
+            #             block.start + block.n - 1,
+            #             either.value,
+            #         )
+            #     )
             partial = "{}.{}".format(output_path, idx)
             partials.append(partial)
-            write_pdfdata(pdfdata, partial)
+            write_pdfdata(pdf, partial)
         merge_partials(output_path, partials)
     except Exception as ex:  # PEP8 will complain (W0703) but we don't care ¯\_(ツ)_/¯
         logging.exception(ex)
@@ -63,7 +65,7 @@ def generate_blocks(inf, sup, blocksize):
 
 def merge_partials(path, partials):
     """Merge partial pdfs in one single PDF"""
-    merger = PdfFileMerger()
+    merger = PdfMerger()
     for idx, partial in enumerate(partials):
         # Gallica appends 2 pages to each pdf fetched so we don't write those
         # pagse except for the first partial
@@ -76,29 +78,22 @@ def merge_partials(path, partials):
 def write_pdfdata(pdffilereader, path):
     """Write a partial file"""
     with open(path, "wb+") as ostream:
-        writer = PdfFileWriter()
-        writer.appendPagesFromReader(pdffilereader)
+        writer = PdfWriter()
+        writer.append_pages_from_reader(pdffilereader)
         writer.write(ostream)
 
 
-def fetch_block(resource, from_view, nviews, trials, reason):
+def fetch_block(ark, from_view, nviews, trials, reason):
     """Retrieve a block of PDF data from Gallica"""
     logging.debug(
         "Fetching resource %s from view %d to view %d",
-        resource.ark.arkid,
+        ark.identifier(),
         from_view,
         from_view + nviews - 1,
     )
-
-    res = resource.content_sync(startview=from_view, nviews=nviews, mode="pdf")
-    if res.is_left:
-        if res.value:
-            logging.exception(res.value)
-        logging.debug("Reason for calling fetch_block was: <%s>.", reason)
-        logging.info("%s attempt left", trials - 1)
-        if trials > 1:
-            return fetch_block(resource, from_view, nviews, trials - 1, reason)
-    return res
+    with httpx.Client(timeout=10) as c:
+        pdf = services.PDF(ark=ark).fetch(c, from_view, nviews)
+        return pdf
 
 
 # Helpers
@@ -119,25 +114,12 @@ def clamp(number, smallest, largest):
     return max(smallest, min(number, largest))
 
 
-def gallica_nviews(resource):
+def gallica_nviews(ark):
     """Ask Gallica"s API to know the total number of views of the resource"""
-    mdata = resource.pagination_sync()
-
-    def get_from_dict(dic):
-        try:
-            return monadic.Right(int(dic["livre"]["structures"]["nbVueImages"]))
-        except Exception as ex:
-            return monadic.Left(ex)
-
-    nviews = mdata.flat_map(get_from_dict)
-    if nviews.is_left:
-        logging.debug(
-            """Could not get the total number of views from Gallica.
-        Value arbitrarily set to %d.""",
-            DEFAULT_N_VIEWS,
-        )
-        return DEFAULT_N_VIEWS
-    return nviews.value
+    with httpx.Client(timeout=10) as c:
+        doc = services.Pagination(ark=ark).fetch(c)
+        views = doc.find("livre").find("structure").find("nbvueimages")
+        return int(views.string)
 
 
 def to_pdffilereader(bdata):
@@ -196,7 +178,7 @@ def parse_args():
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    resource = Resource(pargs.ark)
+    resource = Ark.from_string(pargs.ark)
     nviews = gallica_nviews(resource)
     start = clamp(pargs.start, 1, nviews)
     end = clamp(pargs.end, start, nviews) if pargs.end else nviews
@@ -208,7 +190,7 @@ def parse_args():
         start,
         end,
         "by blocks of size %d" % blocksize if blocksize else "",
-        resource.arkid,
+        resource.identifier(),
         nviews,
     )
 
